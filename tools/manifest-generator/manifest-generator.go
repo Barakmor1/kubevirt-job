@@ -19,7 +19,6 @@ import (
 	"path/filepath"
 	"text/template"
 
-	"github.com/kubevirt/kubevirt-job/pkg/monitoring/rules"
 	args2 "github.com/kubevirt/kubevirt-job/pkg/kubevirt-job/resources/args"
 	wasp "github.com/kubevirt/kubevirt-job/pkg/kubevirt-job/resources/operator"
 	"github.com/kubevirt/kubevirt-job/tools/util"
@@ -87,8 +86,6 @@ func main() {
 		generateFromFile(*templFile)
 		return
 	}
-
-	rules.SetupRules()
 
 	generateFromCode(*resourceType, *resourceGroup)
 }

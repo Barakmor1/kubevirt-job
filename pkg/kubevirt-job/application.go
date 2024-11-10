@@ -22,21 +22,20 @@ package kubevirt_job
 import (
 	"context"
 	"fmt"
+	"github.com/kubevirt/kubevirt-job/pkg/client"
 	"os"
 	"path"
 	"strconv"
 
+	"github.com/kubevirt/kubevirt-job/pkg/log"
 	"k8s.io/apimachinery/pkg/api/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	virtv1 "kubevirt.io/api/core/v1"
-	"kubevirt.io/client-go/kubecli"
-	"kubevirt.io/client-go/log"
 
 	"kubevirt.io/kubevirt/pkg/apimachinery/patch"
-	"kubevirt.io/kubevirt/pkg/util"
 )
 
 const (
@@ -47,24 +46,19 @@ const (
 )
 
 type MachineTypeUpdater struct {
-	virtClient      kubecli.KubevirtClient
+	virtClient      client.KubevirtJobClient
 	machineTypeGlob string
 	namespace       string
 	labelSelector   labels.Selector
 	restartRequired bool
 }
 
-var EnvVarManager util.EnvVarManager = util.EnvVarManagerImpl{}
+//var EnvVarManager util.EnvVarManager = util.EnvVarManagerImpl{}
 
 func Execute() {
 	log.InitializeLogging("machine-type-updater")
-	clientConfig, err := kubecli.GetKubevirtClientConfig()
-	if err != nil {
-		log.Log.Errorf("Error retrieving client config: %v", err)
-		os.Exit(1)
-	}
 
-	virtCli, err := kubecli.GetKubevirtClientFromRESTConfig(clientConfig)
+	virtCli, err := client.GetKubevirtJobClient()
 	if err != nil {
 		log.Log.Errorf("Error retrieving virt client: %v", err)
 		os.Exit(1)
@@ -75,9 +69,10 @@ func Execute() {
 		os.Exit(1)
 	}
 	app.Run()
+
 }
 
-func NewMachineTypeUpdater(virtCli kubecli.KubevirtClient) (*MachineTypeUpdater, error) {
+func NewMachineTypeUpdater(virtCli client.KubevirtJobClient) (*MachineTypeUpdater, error) {
 	updater := MachineTypeUpdater{
 		virtClient: virtCli,
 	}
@@ -96,7 +91,7 @@ func (c *MachineTypeUpdater) Run() {
 	log.Log.Info("Starting machine-type-updater")
 	defer log.Log.Info("Shutting down machine-type-updater")
 
-	vmList, err := c.virtClient.VirtualMachine(c.namespace).List(context.Background(), &metav1.ListOptions{LabelSelector: c.labelSelector.String()})
+	vmList, err := c.virtClient.KubevirtClient().KubevirtV1().VirtualMachines(c.namespace).List(context.Background(), &metav1.ListOptions{LabelSelector: c.labelSelector.String()})
 	if err != nil {
 		log.Log.Errorf("Error getting vm list: %s", err.Error())
 		os.Exit(1)

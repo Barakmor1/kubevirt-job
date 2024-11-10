@@ -7,43 +7,43 @@ package client
 */
 
 import (
+	"github.com/kubevirt/kubevirt-job/pkg/generated/kubevirt/clientset/versioned"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	kubevirtclient "kubevirt.io/application-aware-quota/pkg/generated/kubevirt/clientset/versioned"
 )
 
-type WaspClient interface {
+type KubevirtJobClient interface {
 	RestClient() *rest.RESTClient
 	kubernetes.Interface
-	KubevirtClient() kubevirtclient.Interface
+	KubevirtClient() versioned.Interface
 	DiscoveryClient() discovery.DiscoveryInterface
 	Config() *rest.Config
 }
 
-type wasp struct {
+type kubevirtCli struct {
 	master          string
 	kubeconfig      string
 	restClient      *rest.RESTClient
 	config          *rest.Config
-	kubevirtClient  *kubevirtclient.Clientset
+	kubevirtClient  *versioned.Clientset
 	discoveryClient *discovery.DiscoveryClient
 	dynamicClient   dynamic.Interface
 	*kubernetes.Clientset
 }
 
-func (k wasp) KubevirtClient() kubevirtclient.Interface {
+func (k kubevirtCli) KubevirtClient() versioned.Interface {
 	return k.kubevirtClient
 }
 
-func (k wasp) Config() *rest.Config {
+func (k kubevirtCli) Config() *rest.Config {
 	return k.config
 }
 
-func (k wasp) RestClient() *rest.RESTClient {
+func (k kubevirtCli) RestClient() *rest.RESTClient {
 	return k.restClient
 }
-func (k wasp) DiscoveryClient() discovery.DiscoveryInterface {
+func (k kubevirtCli) DiscoveryClient() discovery.DiscoveryInterface {
 	return k.discoveryClient
 }

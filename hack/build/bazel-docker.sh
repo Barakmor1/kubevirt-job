@@ -22,7 +22,7 @@ source "${script_dir}"/config.sh
 mkdir -p "${WASP_DIR}/_out"
 
 # update this whenever new builder tag is created
-BUILDER_IMAGE=${BUILDER_IMAGE:-quay.io/bmordeha/kubevirt-job-builder:2410081248-f54350c2}
+BUILDER_IMAGE=${BUILDER_IMAGE:-quay.io/bmordeha/kubevirt-job-builder:2411101344-0a1bae2}
 
 BUILDER_VOLUME="wasp-volume"
 DOCKER_CA_CERT_FILE="${DOCKER_CA_CERT_FILE:-}"
