@@ -7,7 +7,7 @@ package client
 */
 
 import (
-	"github.com/kubevirt/kubevirt-job/pkg/generated/kubevirt/clientset/versioned"
+	"github.com/kubevirt/kubevirt-job/pkg/client-go/kubevirt/clientset/versioned"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"

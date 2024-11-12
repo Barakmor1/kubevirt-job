@@ -106,6 +106,7 @@ _rsync \
     --exclude 'cluster-up/cluster/**/.kubectl' \
     --exclude 'cluster-up/cluster/**/.oc' \
     --exclude 'cluster-up/cluster/**/.kubeconfig' \
+    --exclude 'pkg/client-go/kubevirt/clientset/versioned/typed/core/v1/generated_expansion.go' \
     --exclude "_out" \
     --exclude "bin" \
     --exclude "vendor" \

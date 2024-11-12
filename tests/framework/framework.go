@@ -5,10 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	virtclientset "github.com/kubevirt/kubevirt-job/pkg/client-go/kubevirt/clientset/versioned"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	promv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	virtclientset "kubevirt.io/application-aware-quota/pkg/generated/kubevirt/clientset/versioned"
 
 	"net/http"
 

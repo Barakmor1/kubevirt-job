@@ -23,6 +23,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/kubevirt/kubevirt-job/pkg/client"
+	envmanager "github.com/kubevirt/kubevirt-job/pkg/kubevirt-job/env-manager"
+	"github.com/kubevirt/kubevirt-job/pkg/patch"
 	"os"
 	"path"
 	"strconv"
@@ -34,8 +36,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	virtv1 "kubevirt.io/api/core/v1"
-
-	"kubevirt.io/kubevirt/pkg/apimachinery/patch"
 )
 
 const (
@@ -53,7 +53,7 @@ type MachineTypeUpdater struct {
 	restartRequired bool
 }
 
-//var EnvVarManager util.EnvVarManager = util.EnvVarManagerImpl{}
+var EnvVarManager envmanager.EnvVarManager = envmanager.EnvVarManagerImpl{}
 
 func Execute() {
 	log.InitializeLogging("machine-type-updater")
@@ -91,7 +91,7 @@ func (c *MachineTypeUpdater) Run() {
 	log.Log.Info("Starting machine-type-updater")
 	defer log.Log.Info("Shutting down machine-type-updater")
 
-	vmList, err := c.virtClient.KubevirtClient().KubevirtV1().VirtualMachines(c.namespace).List(context.Background(), &metav1.ListOptions{LabelSelector: c.labelSelector.String()})
+	vmList, err := c.virtClient.KubevirtClient().KubevirtV1().VirtualMachines(c.namespace).List(context.Background(), metav1.ListOptions{LabelSelector: c.labelSelector.String()})
 	if err != nil {
 		log.Log.Errorf("Error getting vm list: %s", err.Error())
 		os.Exit(1)
@@ -124,7 +124,7 @@ func (c *MachineTypeUpdater) execute(vm *virtv1.VirtualMachine) error {
 
 	// if force restart flag is set, restart running VMs immediately
 	if c.restartRequired && vm.Status.PrintableStatus == virtv1.VirtualMachineStatusRunning {
-		return c.virtClient.VirtualMachine(vm.Namespace).Restart(context.Background(), vm.Name, &virtv1.RestartOptions{})
+		return c.virtClient.KubevirtClient().KubevirtV1().VirtualMachines(vm.Namespace).Restart(context.Background(), vm.Name, &virtv1.RestartOptions{})
 	}
 
 	return nil
@@ -151,7 +151,7 @@ func (c *MachineTypeUpdater) patchMachineType(vm *virtv1.VirtualMachine) error {
 		return fmt.Errorf("failed to generate patch payload: %v", err)
 	}
 
-	_, err = c.virtClient.VirtualMachine(vm.Namespace).Patch(context.Background(), vm.Name, types.JSONPatchType, payload, &metav1.PatchOptions{})
+	_, err = c.virtClient.KubevirtClient().KubevirtV1().VirtualMachines(vm.Namespace).Patch(context.Background(), vm.Name, types.JSONPatchType, payload, metav1.PatchOptions{})
 	return err
 }
 

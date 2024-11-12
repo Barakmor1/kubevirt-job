@@ -36,19 +36,13 @@ OPENAPI_PKG=${OPENAPI_PKG:-$(
 (GOPROXY=off go install ${CODEGEN_PKG}/cmd/lister-gen)
 
 find "${SCRIPT_ROOT}/pkg/" -name "*generated*.go" -exec rm {} -f \;
-rm -rf "${SCRIPT_ROOT}/pkg/generated"
-
-mkdir "${SCRIPT_ROOT}/pkg/generated"
-
-mkdir "${SCRIPT_ROOT}/pkg/generated/kubevirt"
-mkdir "${SCRIPT_ROOT}/pkg/generated/kubevirt/clientset"
 
 
 client-gen \
 	--clientset-name versioned \
 	--input-base kubevirt.io/api \
-    --output-dir "${SCRIPT_ROOT}/pkg/generated/kubevirt/clientset" \
-	--output-pkg github.com/kubevirt/kubevirt-job/pkg/generated/kubevirt/clientset \
+    --output-dir "${SCRIPT_ROOT}/pkg/client-go/kubevirt/clientset" \
+	--output-pkg github.com/kubevirt/kubevirt-job/pkg/client-go/kubevirt/clientset \
 	--apply-configuration-package '' \
 	--go-header-file "${SCRIPT_ROOT}/hack/custom-boilerplate.go.txt" \
     --input core/v1

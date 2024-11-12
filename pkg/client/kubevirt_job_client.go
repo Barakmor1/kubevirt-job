@@ -2,7 +2,7 @@ package client
 
 import (
 	"flag"
-	"github.com/kubevirt/kubevirt-job/pkg/generated/kubevirt/clientset/versioned"
+	"github.com/kubevirt/kubevirt-job/pkg/client-go/kubevirt/clientset/versioned"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
