@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#Copyright 2023 The WASP Authors.
+#Copyright 2023 The KubevirtJob Authors.
 #
 #Licensed under the Apache License, Version 2.0 (the "License");
 #you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 
 set -eo pipefail
 
-readonly MAX_WASP_WAIT_RETRY=30
-readonly WASP_WAIT_TIME=10
-
 script_dir="$(cd "$(dirname "$0")" && pwd -P)"
 source hack/build/config.sh
 source hack/build/common.sh
@@ -32,12 +29,12 @@ KUBEVIRTCI_CONFIG_PATH="$(
 # functional testing
 BASE_PATH=${KUBEVIRTCI_CONFIG_PATH:-$PWD}
 KUBECONFIG=${KUBECONFIG:-$BASE_PATH/$KUBEVIRT_PROVIDER/.kubeconfig}
-GOCLI=${GOCLI:-${WASP_DIR}/cluster-up/cli.sh}
+GOCLI=${GOCLI:-${KUBEVIRT_JOB_DIR}/cluster-up/cli.sh}
 KUBE_URL=${KUBE_URL:-""}
-WASP_NAMESPACE=${WASP_NAMESPACE:-wasp}
+KUBEVIRT_JOB_NAMESPACE=${KUBEVIRT_JOB_NAMESPACE:-kubevirt-job}
 
 
-OPERATOR_CONTAINER_IMAGE=$(./cluster-up/kubectl.sh get ds -n $WASP_NAMESPACE wasp-agent -o'custom-columns=spec:spec.template.spec.containers[0].image' --no-headers)
+OPERATOR_CONTAINER_IMAGE=$(./cluster-up/kubectl.sh get ds -n $KUBEVIRT_JOB_NAMESPACE kubevirt-job-agent -o'custom-columns=spec:spec.template.spec.containers[0].image' --no-headers)
 DOCKER_PREFIX=${OPERATOR_CONTAINER_IMAGE%/*}
 DOCKER_TAG=${OPERATOR_CONTAINER_IMAGE##*:}
 
@@ -54,39 +51,20 @@ fi
 parseTestOpts "${@}"
 
 arg_kubeurl="${KUBE_URL:+-kubeurl=$KUBE_URL}"
-arg_namespace="${WASP_NAMESPACE:+-wasp-namespace=$WASP_NAMESPACE}"
-arg_kubeconfig_wasp="${KUBECONFIG:+-kubeconfig-wasp=$KUBECONFIG}"
+arg_namespace="${KUBEVIRT_JOB_NAMESPACE:+-kubevirt-job-namespace=$KUBEVIRT_JOB_NAMESPACE}"
+arg_kubeconfig_kubevirt_job="${KUBECONFIG:+-kubeconfig-kubevirt-job=$KUBECONFIG}"
 arg_kubeconfig="${KUBECONFIG:+-kubeconfig=$KUBECONFIG}"
-arg_kubectl="${KUBECTL:+-kubectl-path-wasp=$KUBECTL}"
-arg_oc="${KUBECTL:+-oc-path-wasp=$KUBECTL}"
-arg_gocli="${GOCLI:+-gocli-path-wasp=$GOCLI}"
+arg_kubectl="${KUBECTL:+-kubectl-path-kubevirt-job=$KUBECTL}"
+arg_oc="${KUBECTL:+-oc-path-kubevirt-job=$KUBECTL}"
+arg_gocli="${GOCLI:+-gocli-path-kubevirt-job=$GOCLI}"
 arg_docker_prefix="${DOCKER_PREFIX:+-docker-prefix=$DOCKER_PREFIX}"
 arg_docker_tag="${DOCKER_TAG:+-docker-tag=$DOCKER_TAG}"
 
-test_args="${test_args}  -ginkgo.v  ${arg_kubeurl} ${arg_namespace} ${arg_kubeconfig} ${arg_kubeconfig_wasp} ${arg_kubectl} ${arg_oc} ${arg_gocli} ${arg_docker_prefix} ${arg_docker_tag}"
-
-echo 'Wait until all wasp Pods are ready'
-retry_counter=0
-while [ $retry_counter -lt $MAX_WASP_WAIT_RETRY ] && [ -n "$(./cluster-up/kubectl.sh get pods -n $WASP_NAMESPACE -o'custom-columns=status:status.containerStatuses[*].ready' --no-headers | grep false)" ]; do
-    retry_counter=$((retry_counter + 1))
-    sleep $WASP_WAIT_TIME
-    echo "Checking wasp pods again, count $retry_counter"
-    if [ $retry_counter -gt 1 ] && [ "$((retry_counter % 6))" -eq 0 ]; then
-        ./cluster-up/kubectl.sh get pods -n $WASP_NAMESPACE
-    fi
-done
-
-if [ $retry_counter -eq $MAX_WASP_WAIT_RETRY ]; then
-    echo "Not all wasp pods became ready"
-    ./cluster-up/kubectl.sh get pods -n $WASP_NAMESPACE
-    ./cluster-up/kubectl.sh get pods -n $WASP_NAMESPACE -o yaml
-    ./cluster-up/kubectl.sh describe pods -n $WASP_NAMESPACE
-    exit 1
-fi
+test_args="${test_args}  -ginkgo.v  ${arg_kubeurl} ${arg_namespace} ${arg_kubeconfig} ${arg_kubeconfig_kubevirt_job} ${arg_kubectl} ${arg_oc} ${arg_gocli} ${arg_docker_prefix} ${arg_docker_tag}"
 
 test_command="${TESTS_OUT_DIR}/tests.test -test.timeout 360m ${test_args}"
 echo "$test_command"
 (
-    cd ${WASP_DIR}/tests
+    cd ${KUBEVIRT_JOB_DIR}/tests
     ${test_command}
 )

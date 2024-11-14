@@ -2,10 +2,7 @@ package operator
 
 import (
 	"fmt"
-
-	"github.com/openshift-virtualization/wasp-agent/pkg/monitoring/rules"
-	utils2 "github.com/openshift-virtualization/wasp-agent/pkg/util"
-
+	utils2 "github.com/kubevirt/kubevirt-job/pkg/util"
 	secv1 "github.com/openshift/api/security/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -19,9 +16,8 @@ import (
 )
 
 const (
-	roleName        = "wasp"
+	roleName        = "kubevirt-job"
 	clusterRoleName = roleName + "-cluster"
-	promRuleName    = "wasp-rules"
 )
 
 func getClusterPolicyRules() []rbacv1.PolicyRule {
@@ -82,19 +78,9 @@ func createServiceAccount(namespace string) *corev1.ServiceAccount {
 	return utils2.ResourceBuilder.CreateOperatorServiceAccount(utils2.OperatorServiceAccountName, namespace)
 }
 
-func createPrometheusRule(args *FactoryArgs) []client.Object {
-	if args.NamespacedArgs.DeployPrometheusRule == "true" {
-		return []client.Object{
-			rules.CreatePrometheusRule(promRuleName, args.NamespacedArgs.Namespace),
-		}
-	}
-
-	return nil
-}
-
 func createDaemonSet(args *FactoryArgs) []client.Object {
 	return []client.Object{
-		createWaspDaemonSet(args.NamespacedArgs.Namespace,
+		createKubevirtJobDaemonSet(args.NamespacedArgs.Namespace,
 			args.NamespacedArgs.SwapUtilizationThresholdFactor,
 			args.NamespacedArgs.MaxAverageSwapInPagesPerSecond,
 			args.NamespacedArgs.MaxAverageSwapOutPagesPerSecond,
@@ -142,10 +128,10 @@ func createDaemonSetEnvVar(swapUtilizationTHresholdFactor, maxAverageSwapInPerSe
 	}
 }
 
-func createWaspDaemonSet(namespace, swapUtilizationTHresholdFactor, maxAverageSwapInPagesPerSecond, maxAverageSwapOutPagesPerSecond, averageWindowSizeSeconds, verbosity, waspImage, pullPolicy string) *appsv1.DaemonSet {
+func createKubevirtJobDaemonSet(namespace, swapUtilizationTHresholdFactor, maxAverageSwapInPagesPerSecond, maxAverageSwapOutPagesPerSecond, averageWindowSizeSeconds, verbosity, kubevirtJobImage, pullPolicy string) *appsv1.DaemonSet {
 	container := corev1.Container{
-		Name:            "wasp-agent",
-		Image:           waspImage,
+		Name:            "kubevirt-job-agent",
+		Image:           kubevirtJobImage,
 		ImagePullPolicy: corev1.PullPolicy(pullPolicy),
 		Resources: corev1.ResourceRequirements{
 			Requests: corev1.ResourceList{
@@ -169,21 +155,21 @@ func createWaspDaemonSet(namespace, swapUtilizationTHresholdFactor, maxAverageSw
 	}
 	container.Env = createDaemonSetEnvVar(swapUtilizationTHresholdFactor, maxAverageSwapInPagesPerSecond, maxAverageSwapOutPagesPerSecond, averageWindowSizeSeconds, verbosity)
 
-	labels := resources.WithLabels(map[string]string{"name": "wasp"}, utils2.DaemonSetLabels)
+	labels := resources.WithLabels(map[string]string{"name": "kubevirt-job"}, utils2.DaemonSetLabels)
 	ds := &appsv1.DaemonSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "DaemonSet",
 			APIVersion: "apps/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "wasp-agent",
+			Name:      "kubevirt-job-agent",
 			Namespace: namespace,
 			Labels:    labels,
 		},
 		Spec: appsv1.DaemonSetSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"name": "wasp",
+					"name": "kubevirt-job",
 				},
 			},
 			Template: corev1.PodTemplateSpec{
@@ -192,11 +178,11 @@ func createWaspDaemonSet(namespace, swapUtilizationTHresholdFactor, maxAverageSw
 						"description": "Configures swap for workloads",
 					},
 					Labels: map[string]string{
-						"name": "wasp",
+						"name": "kubevirt-job",
 					},
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName:            "wasp",
+					ServiceAccountName:            "kubevirt-job",
 					HostPID:                       true,
 					HostUsers:                     boolPtr(true),
 					TerminationGracePeriodSeconds: int64Ptr(5),
@@ -260,10 +246,10 @@ func CreateSCC(saNamespace, saName string) *secv1.SecurityContextConstraints {
 			Kind:       "SecurityContextConstraints",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "wasp",
+			Name:      "kubevirt-job",
 			Namespace: saNamespace,
 			Labels: map[string]string{
-				"wasp.io": "",
+				"kubevirt-job.io": "",
 			},
 		},
 		Users: []string{

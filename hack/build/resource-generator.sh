@@ -40,10 +40,10 @@ function generateResourceManifest() {
             -docker-tag="${DOCKER_TAG}" \
             -operator-version="${DOCKER_TAG}" \
             -deploy-cluster-resources="true" \
-            -operator-image="${DOCKER_PREFIX}/${WASP_IMAGE_NAME}:${DOCKER_TAG}" \
+            -operator-image="${DOCKER_PREFIX}/${KUBEVIRT_JOB_IMAGE_NAME}:${DOCKER_TAG}" \
             -verbosity="${VERBOSITY}" \
             -pull-policy="${PULL_POLICY}" \
-            -namespace="${WASP_NAMESPACE}" \
+            -namespace="${KUBEVIRT_JOB_NAMESPACE}" \
             -max-average-swapin-pages-per-second="${MAX_AVERAGE_SWAPIN_PAGES_PER_SECOND}" \
             -max-average-swapout-pages-per-second="${MAX_AVERAGE_SWAPOUT_PAGES_PER_SECOND}" \
             -average-window-size-seconds="${AVERAGE_WINDOW_SIZE_SECONDS}" \
@@ -60,7 +60,7 @@ function generateResourceManifest() {
             -operator-image="{{ operator_image_name }}" \
             -verbosity="${VERBOSITY}" \
             -pull-policy="{{ pull_policy }}" \
-            -namespace="{{ wasp_namespace }}" \
+            -namespace="{{ kubevirt_job_namespace }}" \
             -max-average-swapin-pages-per-second="{{ max_average_swapin_pages_per_second }}" \
             -max-average-swapout-pages-per-second="{{ max_average_swapout_pages_per_second }}" \
             -average-window-size-seconds="{{ average_window_size_seconds }}" \
@@ -119,11 +119,11 @@ function populateResourceManifest() {
             -docker-tag="${DOCKER_TAG}" \
             -operator-version="${DOCKER_TAG}" \
             -deploy-cluster-resources="true" \
-            -operator-image="${DOCKER_PREFIX}/${WASP_IMAGE_NAME}:${DOCKER_TAG}" \
+            -operator-image="${DOCKER_PREFIX}/${KUBEVIRT_JOB_IMAGE_NAME}:${DOCKER_TAG}" \
             -verbosity="${VERBOSITY}" \
             -pull-policy="${PULL_POLICY}" \
             -cr-name="${CR_NAME}" \
-            -namespace="${WASP_NAMESPACE}" \
+            -namespace="${kubevirt_job_namespace}" \
             -max-average-swapin-pages-per-second="${MAX_AVERAGE_SWAPIN_PAGES_PER_SECOND}" \
             -max-average-swapout-pages-per-second="${MAX_AVERAGE_SWAPOUT_PAGES_PER_SECOND}" \
             -average-window-size-seconds="${AVERAGE_WINDOW_SIZE_SECONDS}" \
@@ -142,7 +142,7 @@ function populateResourceManifest() {
             -operator-image="{{ operator_image_name }}" \
             -verbosity="${VERBOSITY}" \
             -pull-policy="{{ pull_policy }}" \
-            -namespace="{{ wasp_namespace }}" \
+            -namespace="{{ kubevirt_job_namespace }}" \
             -max-average-swapin-pages-per-second="{{ max_average_swapin_pages_per_second }}" \
             -max-average-swapout-pages-per-second="{{ max_average_swapout_pages_per_second }}" \
             -average-window-size-seconds="{{ average_window_size_seconds }}" \

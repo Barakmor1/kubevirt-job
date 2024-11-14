@@ -25,18 +25,8 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(
     cd ${SCRIPT_ROOT}
     ls -d -1 ./vendor/k8s.io/code-generator 2>/dev/null || echo ../code-generator
 )}
-OPENAPI_PKG=${OPENAPI_PKG:-$(
-    cd ${SCRIPT_ROOT}
-    ls -d -1 ./vendor/k8s.io/kube-openapi 2>/dev/null || echo ../kube-openapi
-)}
 
-(GOPROXY=off go install ${CODEGEN_PKG}/cmd/deepcopy-gen)
 (GOPROXY=off go install ${CODEGEN_PKG}/cmd/client-gen)
-(GOPROXY=off go install ${CODEGEN_PKG}/cmd/informer-gen)
-(GOPROXY=off go install ${CODEGEN_PKG}/cmd/lister-gen)
-
-find "${SCRIPT_ROOT}/pkg/" -name "*generated*.go" -exec rm {} -f \;
-
 
 client-gen \
 	--clientset-name versioned \

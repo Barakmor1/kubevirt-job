@@ -4,9 +4,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/kubevirt/kubevirt-job/tests/flags"
 	"github.com/onsi/ginkgo/v2"
 	ginkgo_reporters "github.com/onsi/ginkgo/v2/reporters"
-	"github.com/kubevirt/kubevirt-job/tests/flags"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	qe_reporters "kubevirt.io/qe-tools/pkg/ginkgo-reporters"
 	"testing"
@@ -29,18 +29,18 @@ var (
 )
 
 var (
-	kubectlPath   = flag.String("kubectl-path-wasp", "kubectl", "The path to the kubectl binary")
-	ocPath        = flag.String("oc-path-wasp", "oc", "The path to the oc binary")
-	waspInstallNs = flag.String("wasp-namespace", "wasp", "The namespace of the Wasp daemonset")
-	kubeConfig    = flag.String("kubeconfig-wasp", "/var/run/kubernetes/admin.kubeconfig", "The absolute path to the kubeconfig file")
-	kubeURL       = flag.String("kubeurl", "", "kube URL url:port")
-	goCLIPath     = flag.String("gocli-path-wasp", "cli.sh", "The path to cli script")
-	dockerPrefix  = flag.String("docker-prefix", "", "The docker host:port")
-	dockerTag     = flag.String("docker-tag", "", "The docker tag")
+	kubectlPath          = flag.String("kubectl-path-kubevirt-job", "kubectl", "The path to the kubectl binary")
+	ocPath               = flag.String("oc-path-kubevirt-job", "oc", "The path to the oc binary")
+	kubevirtJobInstallNs = flag.String("kubevirt-job-namespace", "kubevirt-job", "The namespace of the Kubevirt Job daemonset")
+	kubeConfig           = flag.String("kubeconfig-kubevirt-job", "/var/run/kubernetes/admin.kubeconfig", "The absolute path to the kubeconfig file")
+	kubeURL              = flag.String("kubeurl", "", "kube URL url:port")
+	goCLIPath            = flag.String("gocli-path-kubevirt-job", "cli.sh", "The path to cli script")
+	dockerPrefix         = flag.String("docker-prefix", "", "The docker host:port")
+	dockerTag            = flag.String("docker-tag", "", "The docker tag")
 )
 
-// waspFailHandler call ginkgo.Fail with printing the additional information
-func waspFailHandler(message string, callerSkip ...int) {
+// kubevirtJobFailHandler call ginkgo.Fail with printing the additional information
+func kubevirtJobFailHandler(message string, callerSkip ...int) {
 	if len(callerSkip) > 0 {
 		callerSkip[0]++
 	}
@@ -49,7 +49,7 @@ func waspFailHandler(message string, callerSkip ...int) {
 
 func TestTests(t *testing.T) {
 	defer GinkgoRecover()
-	RegisterFailHandler(waspFailHandler)
+	RegisterFailHandler(kubevirtJobFailHandler)
 	BuildTestSuite()
 	RunSpecs(t, "Tests Suite")
 }
@@ -64,7 +64,7 @@ func BuildTestSuite() {
 		// Read flags, and configure client instances
 		framework.ClientsInstance.KubectlPath = *kubectlPath
 		framework.ClientsInstance.OcPath = *ocPath
-		framework.ClientsInstance.WaspNamespace = *waspInstallNs
+		framework.ClientsInstance.KubevirtJobNamespace = *kubevirtJobInstallNs
 		framework.ClientsInstance.KubeConfig = *kubeConfig
 		framework.ClientsInstance.KubeURL = *kubeURL
 		framework.ClientsInstance.GoCLIPath = *goCLIPath
@@ -73,7 +73,7 @@ func BuildTestSuite() {
 
 		fmt.Fprintf(ginkgo.GinkgoWriter, "Kubectl path: %s\n", framework.ClientsInstance.KubectlPath)
 		fmt.Fprintf(ginkgo.GinkgoWriter, "OC path: %s\n", framework.ClientsInstance.OcPath)
-		fmt.Fprintf(ginkgo.GinkgoWriter, "WASP install NS: %s\n", framework.ClientsInstance.WaspNamespace)
+		fmt.Fprintf(ginkgo.GinkgoWriter, "KubevirtJob install NS: %s\n", framework.ClientsInstance.KubevirtJobNamespace)
 		fmt.Fprintf(ginkgo.GinkgoWriter, "Kubeconfig: %s\n", framework.ClientsInstance.KubeConfig)
 		fmt.Fprintf(ginkgo.GinkgoWriter, "KubeURL: %s\n", framework.ClientsInstance.KubeURL)
 		fmt.Fprintf(ginkgo.GinkgoWriter, "GO CLI path: %s\n", framework.ClientsInstance.GoCLIPath)

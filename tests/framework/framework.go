@@ -24,7 +24,6 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -36,15 +35,11 @@ import (
 )
 
 const (
-	// PrometheusLabelKey provides the label to indicate prometheus metrics are available in the pods.
-	PrometheusLabelKey = "prometheus.wasp.kubevirt.io"
-	// PrometheusLabelValue provides the label value which shouldn't be empty to avoid a prometheus WIP issue.
-	PrometheusLabelValue = "true"
 	// HonorWaitForFirstConsumer - if enabled will not schedule worker pods on a storage with WaitForFirstConsumer binding mode
 	HonorWaitForFirstConsumer = "HonorWaitForFirstConsumer"
 	nsCreateTime              = 60 * time.Second
-	//NsPrefixLabel provides a wasp prefix label to identify the test namespace
-	NsPrefixLabel   = "wasp-e2e"
+	//NsPrefixLabel provides a kubevirt-job prefix label to identify the test namespace
+	NsPrefixLabel   = "kubevirt-job-e2e"
 	timeout         = time.Second * 90
 	pollingInterval = time.Second
 )
@@ -69,7 +64,7 @@ type Config struct {
 type Clients struct {
 	KubectlPath   string
 	OcPath        string
-	WaspNamespace string
+	KubevirtJobNamespace string
 	KubeConfig    string
 	KubeURL       string
 	GoCLIPath     string
@@ -87,7 +82,7 @@ type Clients struct {
 }
 
 // Framework supports common operations used by functional/e2e tests. It holds the k8s client,
-// a generated unique namespace, run-time flags, and more fields will be added over time as wasp e2e
+// a generated unique namespace, run-time flags, and more fields will be added over time as kubevirt-job e2e
 // evolves. Global BeforeEach and AfterEach are called in the Framework constructor.
 type Framework struct {
 	Config
@@ -174,7 +169,7 @@ func (f *Framework) CreateNamespace(prefix string, labels map[string]string) (*v
 
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: fmt.Sprintf("wasp-e2e-tests-%s-", prefix),
+			GenerateName: fmt.Sprintf("kubevirt-job-e2e-tests-%s-", prefix),
 			Namespace:    "",
 			Labels:       labels,
 		},
@@ -305,37 +300,6 @@ func GetKubeClientFromRESTConfig(config *rest.Config) (*kubernetes.Clientset, er
 	config.APIPath = "/apis"
 	config.ContentType = runtime.ContentTypeJSON
 	return kubernetes.NewForConfig(config)
-}
-
-// CreatePrometheusServiceInNs creates a service for prometheus in the specified namespace. This
-// allows us to test for prometheus end points using the service to connect to the endpoints.
-func (f *Framework) CreatePrometheusServiceInNs(namespace string) (*v1.Service, error) {
-	service := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "kubevirt-prometheus-metrics",
-			Namespace: namespace,
-			Labels: map[string]string{
-				PrometheusLabelKey: PrometheusLabelValue,
-				"kubevirt.io":      "",
-			},
-		},
-		Spec: v1.ServiceSpec{
-			Ports: []v1.ServicePort{
-				{
-					Name: "metrics",
-					Port: 8443,
-					TargetPort: intstr.IntOrString{
-						StrVal: "metrics",
-					},
-					Protocol: v1.ProtocolTCP,
-				},
-			},
-			Selector: map[string]string{
-				PrometheusLabelKey: PrometheusLabelValue,
-			},
-		},
-	}
-	return f.K8sClient.CoreV1().Services(namespace).Create(context.TODO(), service, metav1.CreateOptions{})
 }
 
 // ExpectEvent polls and fetches events during a defined period of time

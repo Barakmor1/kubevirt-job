@@ -25,14 +25,14 @@ RUN make kubevirt
 FROM fedora:38
 
 # Copy the binary from the builder stage to the final image
-COPY --from=builder /workdir/app/wasp /app/wasp
+COPY --from=builder /workdir/app/kubevirt_job /app/kubevirt_job
 
 # Set the working directory to /app
 WORKDIR /app
 
 # Add a non-root user for running the application
-RUN useradd -u 1001 -r -s /sbin/nologin -d /app/wasp wasp
+RUN useradd -u 1001 -r -s /sbin/nologin -d /app/kubevirt_job kubevirt_job
 USER 1001
 
 # Set the entrypoint to the binary
-ENTRYPOINT ["/app/wasp"]
+ENTRYPOINT ["/app/kubevirt_job"]

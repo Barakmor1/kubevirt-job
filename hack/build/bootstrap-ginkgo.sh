@@ -5,7 +5,7 @@ set -e
 source hack/build/common.sh
 
 # Find every folder containing tests
-for dir in $(find ${WASP_DIR}/pkg/ -type f -name '*_test.go' -printf '%h\n' | sort -u); do
+for dir in $(find ${KUBEVIRT_JOB_DIR}/pkg/ -type f -name '*_test.go' -printf '%h\n' | sort -u); do
     # If there is no file ending with _suite_test.go, bootstrap ginkgo
     SUITE_FILE=$(find $dir -maxdepth 4 -type f -name '*_test.go')
     echo ${SUITE_FILE}

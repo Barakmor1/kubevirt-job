@@ -5,24 +5,24 @@ import (
 )
 
 const (
-	// WaspLabel is the labe applied to all non operator resources
-	WaspLabel = "wasp.io"
+	// KubevirtJobLabel is the labe applied to all non operator resources
+	KubevirtJobLabel = "kubevirt-job.io"
 	// AppKubernetesManagedByLabel is the Kubernetes recommended managed-by label
 	AppKubernetesManagedByLabel = "app.kubernetes.io/managed-by"
 	// AppKubernetesComponentLabel is the Kubernetes recommended component label
 	AppKubernetesComponentLabel = "app.kubernetes.io/component"
-	OperatorServiceAccountName  = "wasp"
+	OperatorServiceAccountName  = "kubevirt-job"
 )
 
 var commonLabels = map[string]string{
-	WaspLabel:                   "",
-	AppKubernetesManagedByLabel: "wasp",
-	AppKubernetesComponentLabel: "swap",
+	KubevirtJobLabel:                   "",
+	AppKubernetesManagedByLabel: "kubevirt-job",
+	AppKubernetesComponentLabel: "virtualization",
 }
 
 var DaemonSetLabels = map[string]string{
-	"wasp.io": "",
-	"tier":    "node",
+	"kubevirt-job.io": "",
+	"tier":            "node",
 }
 
 // ResourceBuilder helps in creating k8s resources

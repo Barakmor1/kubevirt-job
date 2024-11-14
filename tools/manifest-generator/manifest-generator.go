@@ -20,7 +20,7 @@ import (
 	"text/template"
 
 	args2 "github.com/kubevirt/kubevirt-job/pkg/kubevirt-job/resources/args"
-	wasp "github.com/kubevirt/kubevirt-job/pkg/kubevirt-job/resources/operator"
+	"github.com/kubevirt/kubevirt-job/pkg/kubevirt-job/resources/operator"
 	"github.com/kubevirt/kubevirt-job/tools/util"
 
 	"k8s.io/klog/v2"
@@ -50,7 +50,6 @@ var (
 	operatorVersion                 = flag.String("operator-version", "", "")
 	genManifestsPath                = flag.String("generated-manifests-path", "", "")
 	deployClusterResources          = flag.String("deploy-cluster-resources", "", "")
-	deployPrometheusRule            = flag.String("deploy-prometheus-rule", "", "")
 	operatorImage                   = flag.String("operator-image", "", "")
 	verbosity                       = flag.String("verbosity", "1", "")
 	pullPolicy                      = flag.String("pull-policy", "", "")
@@ -160,12 +159,11 @@ func generateFromCode(resourceType, resourceGroup string) {
 }
 
 func getOperatorResources(resourceGroup string) ([]client.Object, error) {
-	args := &wasp.FactoryArgs{
+	args := &operator.FactoryArgs{
 		NamespacedArgs: args2.FactoryArgs{
 			Verbosity:                       *verbosity,
 			OperatorVersion:                 *operatorVersion,
 			DeployClusterResources:          *deployClusterResources,
-			DeployPrometheusRule:            *deployPrometheusRule,
 			PullPolicy:                      *pullPolicy,
 			Namespace:                       *namespace,
 			MaxAverageSwapInPagesPerSecond:  *maxAverageSwapInPagesPerSecond,
@@ -176,5 +174,5 @@ func getOperatorResources(resourceGroup string) ([]client.Object, error) {
 		Image: *operatorImage,
 	}
 
-	return wasp.CreateOperatorResourceGroup(resourceGroup, args)
+	return operator.CreateOperatorResourceGroup(resourceGroup, args)
 }

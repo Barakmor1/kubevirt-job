@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#Copyright 2023 The WASP Authors.
+#Copyright 2023 The KubevirtJob Authors.
 #
 #Licensed under the Apache License, Version 2.0 (the "License");
 #you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ else
     cri_cmd="docker"
 fi
 
-PUSH_TARGETS=(${PUSH_TARGETS:-$WASP_IMAGE_NAME})
+PUSH_TARGETS=(${PUSH_TARGETS:-$KUBEVIRT_JOB_IMAGE_NAME})
 echo "Using ${cri_cmd}, docker_prefix: $DOCKER_PREFIX, docker_tag: $DOCKER_TAG"
 for target in ${PUSH_TARGETS[@]}; do
     BIN_NAME="${target}"

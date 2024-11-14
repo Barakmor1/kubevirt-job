@@ -1,4 +1,4 @@
-#Copyright 2023 The WASP Authors.
+#Copyright 2023 The KubevirtJob Authors.
 #
 #Licensed under the Apache License, Version 2.0 (the "License");
 #you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 #See the License for the specific language governing permissions and
 #limitations under the License.
 
-determine_wasp_bin() {
+determine_kubevirt_job_bin() {
     if [ "${KUBEVIRTCI_RUNTIME-}" = "podman" ]; then
         echo podman
     elif [ "${KUBEVIRTCI_RUNTIME-}" = "docker" ]; then
@@ -29,20 +29,20 @@ determine_wasp_bin() {
 }
 
 
-WASP_DIR="$(cd $(dirname $0)/../../ && pwd -P)"
+KUBEVIRT_JOB_DIR="$(cd $(dirname $0)/../../ && pwd -P)"
 
 
-BIN_DIR=${WASP_DIR}/bin
-OUT_DIR=${WASP_DIR}/_out
-CMD_OUT_DIR=${WASP_DIR}/cmd
+BIN_DIR=${KUBEVIRT_JOB_DIR}/bin
+OUT_DIR=${KUBEVIRT_JOB_DIR}/_out
+CMD_OUT_DIR=${KUBEVIRT_JOB_DIR}/cmd
 TESTS_OUT_DIR=${OUT_DIR}/tests
-BUILD_DIR=${WASP_DIR}/hack/build
-MANIFEST_TEMPLATE_DIR=${WASP_DIR}/manifests/templates
-MANIFEST_GENERATED_DIR=${WASP_DIR}/manifests/generated
+BUILD_DIR=${KUBEVIRT_JOB_DIR}/hack/build
+MANIFEST_TEMPLATE_DIR=${KUBEVIRT_JOB_DIR}/manifests/templates
+MANIFEST_GENERATED_DIR=${KUBEVIRT_JOB_DIR}/manifests/generated
 CACHE_DIR=${OUT_DIR}/gocache
-VENDOR_DIR=${WASP_DIR}/vendor
+VENDOR_DIR=${KUBEVIRT_JOB_DIR}/vendor
 ARCHITECTURE="${BUILD_ARCH:-$(uname -m)}"
 HOST_ARCHITECTURE="$(uname -m)"
-WASP_CRI="$(determine_wasp_bin)"
+KUBEVIRT_JOB_CRI="$(determine_kubevirt_job_bin)"
 
 

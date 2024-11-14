@@ -1,4 +1,4 @@
-#Copyright 2023 The WASP Authors.
+#Copyright 2023 The KubevirtJob Authors.
 #
 #Licensed under the Apache License, Version 2.0 (the "License");
 #you may not use this file except in compliance with the License.
@@ -21,6 +21,6 @@ mkdir -p ${TESTS_OUT_DIR}/
 # use vendor
 export GO111MODULE=${GO111MODULE:-off}
 go build -C vendor/github.com/onsi/ginkgo/v2/ginkgo -o /usr/bin/ginkgo
-ginkgo build ${WASP_DIR}/tests/
-mv ${WASP_DIR}/tests/tests.test ${TESTS_OUT_DIR}/
+ginkgo build ${KUBEVIRT_JOB_DIR}/tests/
+mv ${KUBEVIRT_JOB_DIR}/tests/tests.test ${TESTS_OUT_DIR}/
 cp -f /usr/bin/ginkgo ${TESTS_OUT_DIR}/

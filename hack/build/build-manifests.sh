@@ -11,19 +11,25 @@
 #WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #See the License for the specific language governing permissions and
 #limitations under the License.
+ git status
+
 script_dir="$(cd "$(dirname "$0")" && pwd -P)"
 
 source "${script_dir}"/common.sh
 source "${script_dir}"/config.sh
 generator="${BIN_DIR}/manifest-generator"
 
-( cd "${WASP_DIR}/tools/manifest-generator/" && GO111MODULE=${GO111MODULE:-off} go build -o "${generator}" ./... )
+ cd "${KUBEVIRT_JOB_DIR}/tools/manifest-generator/" && GO111MODULE=${GO111MODULE:-off} go build -o "${generator}" ./...
+pwd
+echo $generator
+ls $BIN_DIR
+exit 2
 
 echo "DOCKER_PREFIX=${DOCKER_PREFIX}"
 echo "DOCKER_TAG=${DOCKER_TAG}"
 echo "VERBOSITY=${VERBOSITY}"
 echo "PULL_POLICY=${PULL_POLICY}"
-echo "WASP_NAMESPACE=${WASP_NAMESPACE}"
+echo "KUBEVIRT_JOB_NAMESPACE=${KUBEVIRT_JOB_NAMESPACE}"
 echo "MAX_AVERAGE_SWAPIN_PAGES_PER_SECOND=${MAX_AVERAGE_SWAPIN_PAGES_PER_SECOND}"
 echo "MAX_AVERAGE_SWAPOUT_PAGES_PER_SECOND=${MAX_AVERAGE_SWAPOUT_PAGES_PER_SECOND}"
 echo "AVERAGE_WINDOW_SIZE_SECONDS=${AVERAGE_WINDOW_SIZE_SECONDS}"
@@ -34,9 +40,9 @@ source "${script_dir}"/resource-generator.sh
 
 mkdir -p "${MANIFEST_GENERATED_DIR}/"
 
-#generate operator related manifests used to deploy wasp with operator-framework
-generateResourceManifest $generator $MANIFEST_GENERATED_DIR "operator" "everything" "operator-everything.yaml.in"
 
+#generate operator related manifests used to deploy kubevirt job with operator-framework
+generateResourceManifest $generator $MANIFEST_GENERATED_DIR "operator" "everything" "operator-everything.yaml.in"
 
 #process templated manifests and populate them with generated manifests
 tempDir=${MANIFEST_TEMPLATE_DIR}

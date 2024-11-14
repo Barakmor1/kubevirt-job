@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#Copyright 2023 The WASP Authors.
+#Copyright 2023 The KubevirtJob Authors.
 #
 #Licensed under the Apache License, Version 2.0 (the "License");
 #you may not use this file except in compliance with the License.
@@ -19,12 +19,12 @@ script_dir="$(cd "$(dirname "$0")" && pwd -P)"
 source "${script_dir}"/common.sh
 source "${script_dir}"/config.sh
 
-mkdir -p "${WASP_DIR}/_out"
+mkdir -p "${KUBEVIRT_JOB_DIR}/_out"
 
 # update this whenever new builder tag is created
 BUILDER_IMAGE=${BUILDER_IMAGE:-quay.io/bmordeha/kubevirt-job-builder:2411101344-0a1bae2}
 
-BUILDER_VOLUME="wasp-volume"
+BUILDER_VOLUME="kubevirt-job-volume"
 DOCKER_CA_CERT_FILE="${DOCKER_CA_CERT_FILE:-}"
 DOCKERIZED_CUSTOM_CA_PATH="/etc/pki/ca-trust/source/anchors/custom-ca.crt"
 
@@ -34,30 +34,30 @@ SYNC_OUT=${SYNC_OUT:-true}
 SYNC_VENDOR=${SYNC_VENDOR:-false}
 
 # Create the persistent docker volume
-if [ -z "$(${WASP_CRI} volume list | grep ${BUILDER_VOLUME})" ]; then
-    ${WASP_CRI} volume create ${BUILDER_VOLUME}
+if [ -z "$(${KUBEVIRT_JOB_CRI} volume list | grep ${BUILDER_VOLUME})" ]; then
+    ${KUBEVIRT_JOB_CRI} volume create ${BUILDER_VOLUME}
 fi
 
 # Make sure that the output directory exists
 echo "Making sure output directory exists..."
-${WASP_CRI} run -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --rm --entrypoint "/entrypoint.sh" ${BUILDER_IMAGE} mkdir -p /root/go/src/github.com/kubevirt/kubevirt-job/_out
+${KUBEVIRT_JOB_CRI} run -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --rm --entrypoint "/entrypoint.sh" ${BUILDER_IMAGE} mkdir -p /root/go/src/github.com/kubevirt/kubevirt-job/_out
 
-${WASP_CRI} run -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --rm --entrypoint "/entrypoint.sh" ${BUILDER_IMAGE} git config --global --add safe.directory /root/go/src/github.com/kubevirt/kubevirt-job
+${KUBEVIRT_JOB_CRI} run -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --rm --entrypoint "/entrypoint.sh" ${BUILDER_IMAGE} git config --global --add safe.directory /root/go/src/github.com/kubevirt/kubevirt-job
 echo "Starting rsyncd"
 # Start an rsyncd instance and make sure it gets stopped after the script exits
-RSYNC_CID_WASP=$(${WASP_CRI} run -d -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --cap-add SYS_CHROOT --expose 873 -P --entrypoint "/entrypoint.sh" ${BUILDER_IMAGE} /usr/bin/rsync --no-detach --daemon --verbose)
+RSYNC_CID_KUBEVIRT_JOB=$(${KUBEVIRT_JOB_CRI} run -d -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --cap-add SYS_CHROOT --expose 873 -P --entrypoint "/entrypoint.sh" ${BUILDER_IMAGE} /usr/bin/rsync --no-detach --daemon --verbose)
 
 function finish() {
-    ${WASP_CRI} stop --time 1 ${RSYNC_CID_WASP} >/dev/null 2>&1
-    ${WASP_CRI} rm -f ${RSYNC_CID_WASP} >/dev/null 2>&1
+    ${KUBEVIRT_JOB_CRI} stop --time 1 ${RSYNC_CID_KUBEVIRT_JOB} >/dev/null 2>&1
+    ${KUBEVIRT_JOB_CRI} rm -f ${RSYNC_CID_KUBEVIRT_JOB} >/dev/null 2>&1
 }
 trap finish EXIT
 
-RSYNCD_PORT=$(${WASP_CRI} port $RSYNC_CID_WASP | cut -d':' -f2)
+RSYNCD_PORT=$(${KUBEVIRT_JOB_CRI} port $RSYNC_CID_KUBEVIRT_JOB | cut -d':' -f2)
 
 rsynch_fail_count=0
 
-while ! rsync ${WASP_DIR}/ "rsync://root@127.0.0.1:${RSYNCD_PORT}/build/" &>/dev/null; do
+while ! rsync ${KUBEVIRT_JOB_DIR}/ "rsync://root@127.0.0.1:${RSYNCD_PORT}/build/" &>/dev/null; do
     if [[ "$rsynch_fail_count" -eq 0 ]]; then
         printf "Waiting for rsyncd to be ready"
         sleep .1
@@ -79,21 +79,21 @@ _rsync() {
     rsync -al "$@"
 }
 
-echo "Rsyncing ${WASP_DIR} to container"
+echo "Rsyncing ${KUBEVIRT_JOB_DIR} to container"
 
-# Copy wasp into the persistent docker volume
+# Copy kubevirt-job into the persistent docker volume
 _rsync \
     --delete \
     --exclude 'cluster-up/cluster/**/.kubectl' \
     --exclude 'cluster-up/cluster/**/.oc' \
     --exclude 'cluster-up/cluster/**/.kubeconfig' \
     --exclude ".vagrant" \
-    ${WASP_DIR}/ \
+    ${KUBEVIRT_JOB_DIR}/ \
     "rsync://root@127.0.0.1:${RSYNCD_PORT}/build"
 
 # Run the command
 test -t 1 && USE_TTY="-it"
-if ! $WASP_CRI exec -w /root/go/src/github.com/kubevirt/kubevirt-job ${USE_TTY} ${RSYNC_CID_WASP} /entrypoint.sh "$@"; then
+if ! $KUBEVIRT_JOB_CRI exec -w /root/go/src/github.com/kubevirt/kubevirt-job ${USE_TTY} ${RSYNC_CID_KUBEVIRT_JOB} /entrypoint.sh "$@"; then
     # Copy the build output out of the container, make sure that _out exactly matches the build result
     if [ "$SYNC_OUT" = "true" ]; then
         _rsync --delete "rsync://root@127.0.0.1:${RSYNCD_PORT}/out" ${OUT_DIR}
@@ -101,7 +101,7 @@ if ! $WASP_CRI exec -w /root/go/src/github.com/kubevirt/kubevirt-job ${USE_TTY} 
     exit 1
 fi
 
-# Copy the whole wasp data out to get generated sources and formatting changes
+# Copy the whole kubevirt-job data out to get generated sources and formatting changes
 _rsync \
     --exclude 'cluster-up/cluster/**/.kubectl' \
     --exclude 'cluster-up/cluster/**/.oc' \
@@ -113,7 +113,7 @@ _rsync \
     --exclude ".vagrant" \
     --exclude ".git" \
     "rsync://root@127.0.0.1:${RSYNCD_PORT}/build" \
-    ${WASP_DIR}/
+    ${KUBEVIRT_JOB_DIR}/
 
 if [ "$SYNC_VENDOR" = "true" ] && [ -n $VENDOR_DIR ]; then
     _rsync --delete "rsync://root@127.0.0.1:${RSYNCD_PORT}/vendor" "${VENDOR_DIR}/"

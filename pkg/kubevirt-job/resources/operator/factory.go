@@ -29,7 +29,7 @@ func aggregateFactoryFunc(funcs ...factoryFunc) factoryFunc {
 
 // CreateOperatorResourceGroup creates all cluster resources from a specific group/component
 func CreateOperatorResourceGroup(group string, args *FactoryArgs) ([]client.Object, error) {
-	f, ok := waspFactoryFunctions[group]
+	f, ok := kubevirtJobFactoryFunctions[group]
 	if !ok {
 		return nil, fmt.Errorf("group %s does not exist", group)
 	}
@@ -41,15 +41,14 @@ func CreateOperatorResourceGroup(group string, args *FactoryArgs) ([]client.Obje
 	return resources, nil
 }
 
-var waspFactoryFunctions = map[string]factoryFunc{
-	"wasp-cluster-rbac": createClusterRBAC,
-	"wasp-rbac":         createNamespacedRBAC,
-	"wasp-daemonset":    createDaemonSet,
-	"wasp-prom-rule":    createPrometheusRule,
-	"everything":        aggregateFactoryFunc(createClusterRBAC, createNamespacedRBAC, createDaemonSet, createPrometheusRule),
+var kubevirtJobFactoryFunctions = map[string]factoryFunc{
+	"kubevirt-job-cluster-rbac": createClusterRBAC,
+	"kubevirt-job-rbac":         createNamespacedRBAC,
+	"kubevirt-job-daemonset":    createDaemonSet,
+	"everything":                aggregateFactoryFunc(createClusterRBAC, createNamespacedRBAC, createDaemonSet),
 }
 
-// ClusterServiceVersionData - Data arguments used to create wasp's CSV manifest
+// ClusterServiceVersionData - Data arguments used to create kubevirt job's CSV manifest
 type ClusterServiceVersionData struct {
 	CsvVersion         string
 	ReplacesCsvVersion string

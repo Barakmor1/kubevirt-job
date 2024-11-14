@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#Copyright 2023 The WASP Authors.
+#Copyright 2023 The KubevirtJob Authors.
 #
 #Licensed under the Apache License, Version 2.0 (the "License");
 #you may not use this file except in compliance with the License.
@@ -21,13 +21,13 @@ source "${script_dir}"/common.sh
 FORCE_PUSH=${FORCE_PUSH:-false}
 
 function build_and_push() {
-  if [ "${WASP_CRI}" = "docker" ]; then
-     WASP_CONTAINER_BUILDCMD=${WASP_CONTAINER_BUILDCMD:-docker}
+  if [ "${KUBEVIRT_JOB_CRI}" = "docker" ]; then
+     KUBEVIRT_JOB_CONTAINER_BUILDCMD=${KUBEVIRT_JOB_CONTAINER_BUILDCMD:-docker}
   else
-     WASP_CONTAINER_BUILDCMD=${WASP_CONTAINER_BUILDCMD:-buildah}
+     KUBEVIRT_JOB_CONTAINER_BUILDCMD=${KUBEVIRT_JOB_CONTAINER_BUILDCMD:-buildah}
   fi
 
-  if [ "${WASP_CONTAINER_BUILDCMD}" = "buildah" ]; then
+  if [ "${KUBEVIRT_JOB_CONTAINER_BUILDCMD}" = "buildah" ]; then
       if [ -e /proc/sys/fs/binfmt_misc/qemu-aarch64 ]; then
           BUILDAH_PLATFORM_FLAG="--platform linux/amd64,linux/arm64"
       else
@@ -43,7 +43,7 @@ function build_and_push() {
   echo "$DOCKER_PREFIX:$DOCKER_TAG"
 
   #Build the encapsulated compile and test container
-  if [ "${WASP_CONTAINER_BUILDCMD}" = "buildah" ]; then
+  if [ "${KUBEVIRT_JOB_CONTAINER_BUILDCMD}" = "buildah" ]; then
       (cd ${BUILDER_SPEC} && buildah build ${BUILDAH_PLATFORM_FLAG} --manifest ${BUILDER_MANIFEST} .)
       buildah manifest push --all ${BUILDER_MANIFEST} docker://${BUILDER_MANIFEST}
   else
@@ -51,7 +51,7 @@ function build_and_push() {
       docker push ${BUILDER_MANIFEST}
   fi
 
-  DIGEST=$(${WASP_CRI} images --digests | grep ${UNTAGGED_BUILDER_IMAGE} | grep ${BUILDER_TAG} | awk '{ print $4 }')
+  DIGEST=$(${KUBEVIRT_JOB_CRI} images --digests | grep ${UNTAGGED_BUILDER_IMAGE} | grep ${BUILDER_TAG} | awk '{ print $4 }')
   echo "Image: ${BUILDER_MANIFEST}"
   echo "Digest: ${DIGEST}"
 }
