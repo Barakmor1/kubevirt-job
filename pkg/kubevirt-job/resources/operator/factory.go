@@ -44,8 +44,8 @@ func CreateOperatorResourceGroup(group string, args *FactoryArgs) ([]client.Obje
 var kubevirtJobFactoryFunctions = map[string]factoryFunc{
 	"kubevirt-job-cluster-rbac": createClusterRBAC,
 	"kubevirt-job-rbac":         createNamespacedRBAC,
-	"kubevirt-job-daemonset":    createDaemonSet,
-	"everything":                aggregateFactoryFunc(createClusterRBAC, createNamespacedRBAC, createDaemonSet),
+	"kubevirt-job":              createJob,
+	"everything":                aggregateFactoryFunc(createClusterRBAC, createNamespacedRBAC, createJob),
 }
 
 // ClusterServiceVersionData - Data arguments used to create kubevirt job's CSV manifest

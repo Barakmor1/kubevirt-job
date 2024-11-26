@@ -2,8 +2,6 @@ module github.com/kubevirt/kubevirt-job
 
 go 1.22.0
 
-toolchain go1.22.6
-
 require (
 	k8s.io/apimachinery v0.31.2
 	k8s.io/code-generator v0.30.4
@@ -40,6 +38,9 @@ require (
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/google/pprof v0.0.0-20240525223248-4bfdf5a9a2af // indirect
+	github.com/gorilla/websocket v1.5.0 // indirect
+	github.com/moby/spdystream v0.4.0 // indirect
+	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/prometheus/procfs v0.11.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	golang.org/x/sync v0.7.0 // indirect
@@ -63,7 +64,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/openshift/api v0.0.0
+	github.com/openshift/api v0.0.0 // indirect
 	github.com/openshift/custom-resource-status v1.1.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/spf13/pflag v1.0.5

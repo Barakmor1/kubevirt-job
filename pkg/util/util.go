@@ -11,19 +11,19 @@ const (
 	AppKubernetesManagedByLabel = "app.kubernetes.io/managed-by"
 	// AppKubernetesComponentLabel is the Kubernetes recommended component label
 	AppKubernetesComponentLabel = "app.kubernetes.io/component"
-	OperatorServiceAccountName  = "kubevirt-job"
+	KubevirtJobResourceName     = "kubevirt-job"
 )
 
 var commonLabels = map[string]string{
-	KubevirtJobLabel:                   "",
+	KubevirtJobLabel:            "",
 	AppKubernetesManagedByLabel: "kubevirt-job",
 	AppKubernetesComponentLabel: "virtualization",
 }
 
-var DaemonSetLabels = map[string]string{
+var JobLabels = map[string]string{
 	"kubevirt-job.io": "",
 	"tier":            "node",
 }
 
 // ResourceBuilder helps in creating k8s resources
-var ResourceBuilder = utils.NewResourceBuilder(commonLabels, DaemonSetLabels)
+var ResourceBuilder = utils.NewResourceBuilder(commonLabels, JobLabels)

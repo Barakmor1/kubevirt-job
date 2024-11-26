@@ -168,3 +168,18 @@ func WithPreferenceRevision(revisionName string) VMOption {
 		}
 	}
 }
+
+func WithPrintableStatus(status v1.VirtualMachinePrintableStatus) VMOption {
+	return func(vm *v1.VirtualMachine) {
+		vm.Status.PrintableStatus = status
+	}
+}
+
+func WithLabel(key, value string) VMOption {
+	return func(vm *v1.VirtualMachine) {
+		if vm.Labels == nil {
+			vm.Labels = map[string]string{}
+		}
+		vm.Labels[key] = value
+	}
+}

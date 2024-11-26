@@ -62,14 +62,15 @@ type Config struct {
 
 // Clients is the struct containing the client-go kubernetes clients
 type Clients struct {
-	KubectlPath   string
-	OcPath        string
+	KubectlPath          string
+	OcPath               string
 	KubevirtJobNamespace string
-	KubeConfig    string
-	KubeURL       string
-	GoCLIPath     string
-	DockerPrefix  string
-	DockerTag     string
+	KubeConfig           string
+	KubeURL              string
+	GoCLIPath            string
+	DockerPrefix         string
+	DockerTag            string
+	KubevirtJobImage     string
 
 	//  k8sClient provides our k8s client pointer
 	K8sClient *kubernetes.Clientset

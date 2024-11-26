@@ -18,6 +18,7 @@ set -euo pipefail
 
 source hack/build/config.sh
 source hack/build/common.sh
+go build -C vendor/github.com/onsi/ginkgo/v2/ginkgo -o /usr/bin/ginkgo
 
 # parsetTestOpts sets 'pkgs' and test_args
 parseTestOpts "${@}"

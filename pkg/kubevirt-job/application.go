@@ -85,20 +85,44 @@ func NewMachineTypeUpdater(virtCli client.KubevirtJobClient) (*MachineTypeUpdate
 	return &updater, nil
 }
 
+func (c *MachineTypeUpdater) getNamespaces() ([]string, error) {
+	if c.namespace != metav1.NamespaceAll {
+		return []string{c.namespace}, nil
+	}
+
+	namespacesList, err := c.virtClient.CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	namespaces := make([]string, len(namespacesList.Items))
+	for i, ns := range namespacesList.Items {
+		namespaces[i] = ns.Name
+	}
+	return namespaces, nil
+}
+
 func (c *MachineTypeUpdater) Run() {
 	defer utilruntime.HandleCrash()
 
 	log.Log.Info("Starting machine-type-updater")
 	defer log.Log.Info("Shutting down machine-type-updater")
 
-	vmList, err := c.virtClient.KubevirtClient().KubevirtV1().VirtualMachines(c.namespace).List(context.Background(), metav1.ListOptions{LabelSelector: c.labelSelector.String()})
+	namespaces, err := c.getNamespaces()
 	if err != nil {
-		log.Log.Errorf("Error getting vm list: %s", err.Error())
+		log.Log.Errorf("Error while listing namespaces: %v", err)
 		os.Exit(1)
 	}
 
-	for _, vm := range vmList.Items {
-		c.execute(&vm)
+	for _, ns := range namespaces {
+		vmList, err := c.virtClient.KubevirtClient().KubevirtV1().VirtualMachines(c.namespace).List(context.Background(), metav1.ListOptions{LabelSelector: c.labelSelector.String()})
+		if err != nil {
+			log.Log.Errorf("Error getting vm list: %s from namespace: %v", err.Error(), ns)
+			continue
+		}
+		for _, vm := range vmList.Items {
+			c.execute(&vm)
+		}
 	}
 }
 
@@ -122,12 +146,22 @@ func (c *MachineTypeUpdater) execute(vm *virtv1.VirtualMachine) error {
 		return nil
 	}
 
-	// if force restart flag is set, restart running VMs immediately
-	if c.restartRequired && vm.Status.PrintableStatus == virtv1.VirtualMachineStatusRunning {
-		return c.virtClient.KubevirtClient().KubevirtV1().VirtualMachines(vm.Namespace).Restart(context.Background(), vm.Name, &virtv1.RestartOptions{})
+	runStrategy, err := vm.RunStrategy()
+	if err != nil {
+		log.Log.Errorf("Error getting RunStrategy from vm %s/%s: %v\nSkipping...", vm.Namespace, vm.Name, err)
+		return nil
 	}
 
-	return nil
+	if runStrategy == virtv1.RunStrategyHalted || vm.Status.PrintableStatus != virtv1.VirtualMachineStatusRunning {
+		return nil
+	}
+
+	if runStrategy == virtv1.RunStrategyOnce {
+		return c.virtClient.KubevirtClient().KubevirtV1().VirtualMachines(vm.Namespace).Stop(context.Background(), vm.Name, &virtv1.StopOptions{})
+
+	}
+
+	return c.virtClient.KubevirtClient().KubevirtV1().VirtualMachines(vm.Namespace).Restart(context.Background(), vm.Name, &virtv1.RestartOptions{})
 }
 
 func (c *MachineTypeUpdater) patchMachineType(vm *virtv1.VirtualMachine) error {
@@ -172,16 +206,13 @@ func (c *MachineTypeUpdater) initVariables() error {
 	c.machineTypeGlob = machineTypeEnvValue
 
 	namespaceEnv, exists := EnvVarManager.LookupEnv(namespaceEnvName)
-	if !exists {
-		return fmt.Errorf("no namespace was specified")
+	if exists {
+		errs := validation.ValidateNamespaceName(namespaceEnv, false)
+		if errs != nil {
+			return fmt.Errorf("syntax error in %s environment variable, value \"%s\": %v", namespaceEnvName, namespaceEnv, errs)
+		}
+		c.namespace = namespaceEnv
 	}
-
-	errs := validation.ValidateNamespaceName(namespaceEnv, false)
-	if errs != nil {
-		return fmt.Errorf("syntax error in %s environment variable, value \"%s\": %v", namespaceEnvName, namespaceEnv, errs)
-	}
-
-	c.namespace = namespaceEnv
 
 	restartEnv, exists := EnvVarManager.LookupEnv(restartRequiredEnvName)
 	if exists {

@@ -42,7 +42,6 @@ fi
 if [ ${KUBEVIRT_SINGLE_STACK} == true ]; then
     validate_single_stack_ipv6
 fi
-
 if [ "$KUBEVIRT_RELEASE" = "latest_nightly" ]; then
   LATEST=$(curl -L https://storage.googleapis.com/kubevirt-prow/devel/nightly/release/kubevirt/kubevirt/latest)
   kubectl apply -f https://storage.googleapis.com/kubevirt-prow/devel/nightly/release/kubevirt/kubevirt/${LATEST}/kubevirt-operator.yaml

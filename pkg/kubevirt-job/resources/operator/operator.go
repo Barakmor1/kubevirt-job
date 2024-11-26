@@ -1,16 +1,14 @@
 package operator
 
 import (
-	"fmt"
 	utils2 "github.com/kubevirt/kubevirt-job/pkg/util"
-	secv1 "github.com/openshift/api/security/v1"
-	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
+	virtv1 "kubevirt.io/api/core/v1"
 	"kubevirt.io/controller-lifecycle-operator-sdk/pkg/sdk/resources"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -24,15 +22,13 @@ func getClusterPolicyRules() []rbacv1.PolicyRule {
 	rules := []rbacv1.PolicyRule{
 		{
 			APIGroups: []string{
-				"",
+				"kubevirt.io",
 			},
 			Resources: []string{
-				"nodes",
+				"virtualmachines",
 			},
 			Verbs: []string{
-				"watch",
 				"list",
-				"update",
 				"patch",
 			},
 		},
@@ -41,12 +37,22 @@ func getClusterPolicyRules() []rbacv1.PolicyRule {
 				"",
 			},
 			Resources: []string{
-				"pods",
+				"namespaces",
 			},
 			Verbs: []string{
-				"delete",
-				"watch",
 				"list",
+			},
+		},
+		{
+			APIGroups: []string{
+				virtv1.SubresourceGroupName,
+			},
+			Resources: []string{
+				"virtualmachines/stop",
+				"virtualmachines/restart",
+			},
+			Verbs: []string{
+				"update",
 			},
 		},
 	}
@@ -59,7 +65,7 @@ func createClusterRole() *rbacv1.ClusterRole {
 }
 
 func createClusterRoleBinding(namespace string) *rbacv1.ClusterRoleBinding {
-	return utils2.ResourceBuilder.CreateOperatorClusterRoleBinding(utils2.OperatorServiceAccountName, clusterRoleName, utils2.OperatorServiceAccountName, namespace)
+	return utils2.ResourceBuilder.CreateOperatorClusterRoleBinding(utils2.KubevirtJobResourceName, clusterRoleName, utils2.KubevirtJobResourceName, namespace)
 }
 
 func createClusterRBAC(args *FactoryArgs) []client.Object {
@@ -71,66 +77,52 @@ func createClusterRBAC(args *FactoryArgs) []client.Object {
 func createNamespacedRBAC(args *FactoryArgs) []client.Object {
 	return []client.Object{
 		createServiceAccount(args.NamespacedArgs.Namespace),
-		CreateSCC(args.NamespacedArgs.Namespace, utils2.OperatorServiceAccountName),
 	}
 }
 func createServiceAccount(namespace string) *corev1.ServiceAccount {
-	return utils2.ResourceBuilder.CreateOperatorServiceAccount(utils2.OperatorServiceAccountName, namespace)
+	return utils2.ResourceBuilder.CreateOperatorServiceAccount(utils2.KubevirtJobResourceName, namespace)
 }
 
-func createDaemonSet(args *FactoryArgs) []client.Object {
+func createJob(args *FactoryArgs) []client.Object {
 	return []client.Object{
-		createKubevirtJobDaemonSet(args.NamespacedArgs.Namespace,
-			args.NamespacedArgs.SwapUtilizationThresholdFactor,
-			args.NamespacedArgs.MaxAverageSwapInPagesPerSecond,
-			args.NamespacedArgs.MaxAverageSwapOutPagesPerSecond,
-			args.NamespacedArgs.AverageWindowSizeSeconds,
+		CreateKubevirtJob(args.NamespacedArgs.Namespace,
+			args.NamespacedArgs.MachineTypeGlob,
+			args.NamespacedArgs.TargetNamespace,
+			args.NamespacedArgs.RestartRequired,
+			args.NamespacedArgs.LabelSelector,
 			args.NamespacedArgs.Verbosity,
 			args.Image,
 			args.NamespacedArgs.PullPolicy),
 	}
 }
 
-func createDaemonSetEnvVar(swapUtilizationTHresholdFactor, maxAverageSwapInPerSecond, maxAverageSwapOutPerSecond, averageWindowSizeSeconds, verbosity string) []corev1.EnvVar {
-	return []corev1.EnvVar{
+func createJobEnvVar(machineTypeGlob, targetNamespace, restartRequired, labelSelector, verbosity string) []corev1.EnvVar {
+	envVar := []corev1.EnvVar{
 		{
-			Name:  "SWAP_UTILIZATION_THRESHOLD_FACTOR",
-			Value: swapUtilizationTHresholdFactor,
+			Name:  "MACHINE_TYPE_GLOB",
+			Value: machineTypeGlob,
 		},
 		{
-			Name:  "MAX_AVERAGE_SWAP_IN_PAGES_PER_SECOND",
-			Value: maxAverageSwapInPerSecond,
-		},
-		{
-			Name:  "MAX_AVERAGE_SWAP_OUT_PAGES_PER_SECOND",
-			Value: maxAverageSwapOutPerSecond,
-		},
-		{
-			Name:  "AVERAGE_WINDOW_SIZE_SECONDS",
-			Value: averageWindowSizeSeconds,
+			Name:  "RESTART_REQUIRED",
+			Value: restartRequired,
 		},
 		{
 			Name:  "VERBOSITY",
 			Value: verbosity,
 		},
-		{
-			Name:  "FSROOT",
-			Value: "/host",
-		},
-		{
-			Name: "NODE_NAME",
-			ValueFrom: &corev1.EnvVarSource{
-				FieldRef: &corev1.ObjectFieldSelector{
-					FieldPath: "spec.nodeName",
-				},
-			},
-		},
 	}
+	if labelSelector != "" {
+		envVar = append(envVar, corev1.EnvVar{Name: "LABEL_SELECTOR", Value: labelSelector})
+	}
+	if targetNamespace != "" {
+		envVar = append(envVar, corev1.EnvVar{Name: "NAMESPACE", Value: targetNamespace})
+	}
+	return envVar
 }
 
-func createKubevirtJobDaemonSet(namespace, swapUtilizationTHresholdFactor, maxAverageSwapInPagesPerSecond, maxAverageSwapOutPagesPerSecond, averageWindowSizeSeconds, verbosity, kubevirtJobImage, pullPolicy string) *appsv1.DaemonSet {
+func CreateKubevirtJob(namespace, machineTypeGlob, targetNamespace, restartRequired, labelSelector, verbosity, kubevirtJobImage, pullPolicy string) *v1.Job {
 	container := corev1.Container{
-		Name:            "kubevirt-job-agent",
+		Name:            "kubevirt-job",
 		Image:           kubevirtJobImage,
 		ImagePullPolicy: corev1.PullPolicy(pullPolicy),
 		Resources: corev1.ResourceRequirements{
@@ -140,92 +132,48 @@ func createKubevirtJobDaemonSet(namespace, swapUtilizationTHresholdFactor, maxAv
 			},
 		},
 		SecurityContext: &corev1.SecurityContext{
-			Privileged: boolPtr(true),
-		},
-		VolumeMounts: []corev1.VolumeMount{
-			{
-				Name:      "host",
-				MountPath: "/host",
+			Privileged:               ptr.To(false),
+			AllowPrivilegeEscalation: ptr.To(false),
+			RunAsNonRoot:             ptr.To(true),
+			SeccompProfile: &corev1.SeccompProfile{
+				Type: corev1.SeccompProfileTypeRuntimeDefault,
 			},
-			{
-				Name:      "rootfs",
-				MountPath: "/rootfs",
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"ALL"},
 			},
 		},
 	}
-	container.Env = createDaemonSetEnvVar(swapUtilizationTHresholdFactor, maxAverageSwapInPagesPerSecond, maxAverageSwapOutPagesPerSecond, averageWindowSizeSeconds, verbosity)
+	container.Env = createJobEnvVar(machineTypeGlob, targetNamespace, restartRequired, labelSelector, verbosity)
 
-	labels := resources.WithLabels(map[string]string{"name": "kubevirt-job"}, utils2.DaemonSetLabels)
-	ds := &appsv1.DaemonSet{
+	labels := resources.WithLabels(map[string]string{"name": "kubevirt-job"}, utils2.JobLabels)
+	cj := &v1.Job{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "DaemonSet",
-			APIVersion: "apps/v1",
+			Kind:       "Job",
+			APIVersion: "batch/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "kubevirt-job-agent",
+			Name:      "kubevirt-job",
 			Namespace: namespace,
 			Labels:    labels,
 		},
-		Spec: appsv1.DaemonSetSpec{
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"name": "kubevirt-job",
-				},
-			},
+		Spec: v1.JobSpec{
+			Suspend: boolPtr(true),
 			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"description": "Configures swap for workloads",
-					},
-					Labels: map[string]string{
-						"name": "kubevirt-job",
-					},
-				},
 				Spec: corev1.PodSpec{
 					ServiceAccountName:            "kubevirt-job",
 					HostPID:                       true,
 					HostUsers:                     boolPtr(true),
 					TerminationGracePeriodSeconds: int64Ptr(5),
 					Containers:                    []corev1.Container{container},
-					Volumes: []corev1.Volume{
-						{
-							Name: "host",
-							VolumeSource: corev1.VolumeSource{
-								HostPath: &corev1.HostPathVolumeSource{
-									Path: "/",
-								},
-							},
-						},
-						{
-							Name: "rootfs",
-							VolumeSource: corev1.VolumeSource{
-								HostPath: &corev1.HostPathVolumeSource{
-									Path: "/",
-								},
-							},
-						},
-					},
-					PriorityClassName: "system-node-critical",
-				},
-			},
-			UpdateStrategy: appsv1.DaemonSetUpdateStrategy{
-				Type: appsv1.RollingUpdateDaemonSetStrategyType,
-				RollingUpdate: &appsv1.RollingUpdateDaemonSet{
-					MaxUnavailable: &intstr.IntOrString{
-						Type:   intstr.String,
-						StrVal: "10%",
-					},
-					MaxSurge: &intstr.IntOrString{
-						Type:   intstr.Int,
-						IntVal: 0,
-					},
+					PriorityClassName:             "system-node-critical",
+					RestartPolicy:                 corev1.RestartPolicyNever,
 				},
 			},
 		},
-		Status: appsv1.DaemonSetStatus{},
+		Status: v1.JobStatus{},
 	}
 
-	return ds
+	return cj
 }
 
 func boolPtr(b bool) *bool {
@@ -234,61 +182,4 @@ func boolPtr(b bool) *bool {
 
 func int64Ptr(i int64) *int64 {
 	return &i
-}
-
-func CreateSCC(saNamespace, saName string) *secv1.SecurityContextConstraints {
-	scc := &secv1.SecurityContextConstraints{}
-	userName := fmt.Sprintf("system:serviceaccount:%s:%s", saNamespace, saName)
-
-	scc = &secv1.SecurityContextConstraints{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "security.openshift.io/v1",
-			Kind:       "SecurityContextConstraints",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "kubevirt-job",
-			Namespace: saNamespace,
-			Labels: map[string]string{
-				"kubevirt-job.io": "",
-			},
-		},
-		Users: []string{
-			userName,
-		},
-	}
-	setSCC(scc)
-
-	return scc
-}
-
-func setSCC(scc *secv1.SecurityContextConstraints) {
-	scc.AllowHostDirVolumePlugin = true
-	scc.AllowHostIPC = true
-	scc.AllowHostNetwork = true
-	scc.AllowHostPID = true
-	scc.AllowHostPorts = true
-	scc.AllowPrivilegeEscalation = pointer.Bool(true)
-	scc.AllowPrivilegedContainer = true
-	scc.AllowedCapabilities = []corev1.Capability{
-		"*",
-	}
-	scc.AllowedUnsafeSysctls = []string{
-		"*",
-	}
-	scc.DefaultAddCapabilities = nil
-	scc.RunAsUser = secv1.RunAsUserStrategyOptions{
-		Type: secv1.RunAsUserStrategyRunAsAny,
-	}
-	scc.SELinuxContext = secv1.SELinuxContextStrategyOptions{
-		Type: secv1.SELinuxStrategyRunAsAny,
-	}
-	scc.SeccompProfiles = []string{
-		"*",
-	}
-	scc.SupplementalGroups = secv1.SupplementalGroupsStrategyOptions{
-		Type: secv1.SupplementalGroupsStrategyRunAsAny,
-	}
-	scc.Volumes = []secv1.FSType{
-		"*",
-	}
 }

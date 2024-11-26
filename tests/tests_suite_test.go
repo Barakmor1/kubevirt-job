@@ -31,7 +31,8 @@ var (
 var (
 	kubectlPath          = flag.String("kubectl-path-kubevirt-job", "kubectl", "The path to the kubectl binary")
 	ocPath               = flag.String("oc-path-kubevirt-job", "oc", "The path to the oc binary")
-	kubevirtJobInstallNs = flag.String("kubevirt-job-namespace", "kubevirt-job", "The namespace of the Kubevirt Job daemonset")
+	kubevirtJobInstallNs = flag.String("kubevirt-job-namespace", "kubevirt-job", "The namespace of the Kubevirt Job")
+	kubevirtJobImage     = flag.String("kubevirt-job-image", "kubevirt-job", "The image of Kubevirt Job")
 	kubeConfig           = flag.String("kubeconfig-kubevirt-job", "/var/run/kubernetes/admin.kubeconfig", "The absolute path to the kubeconfig file")
 	kubeURL              = flag.String("kubeurl", "", "kube URL url:port")
 	goCLIPath            = flag.String("gocli-path-kubevirt-job", "cli.sh", "The path to cli script")
@@ -70,6 +71,7 @@ func BuildTestSuite() {
 		framework.ClientsInstance.GoCLIPath = *goCLIPath
 		framework.ClientsInstance.DockerPrefix = *dockerPrefix
 		framework.ClientsInstance.DockerTag = *dockerTag
+		framework.ClientsInstance.KubevirtJobImage = *kubevirtJobImage
 
 		fmt.Fprintf(ginkgo.GinkgoWriter, "Kubectl path: %s\n", framework.ClientsInstance.KubectlPath)
 		fmt.Fprintf(ginkgo.GinkgoWriter, "OC path: %s\n", framework.ClientsInstance.OcPath)

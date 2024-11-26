@@ -1,0 +1,9 @@
+.idea/
+kubevir_job
+tmp
+_ci-configs/*
+0
+bin/
+_out/*
+manifests/generated/*
+.coverprofile

@@ -45,20 +45,20 @@ type templateData struct {
 }
 
 var (
-	dockerRepo                      = flag.String("docker-repo", "", "")
-	dockertag                       = flag.String("docker-tag", "", "")
-	operatorVersion                 = flag.String("operator-version", "", "")
-	genManifestsPath                = flag.String("generated-manifests-path", "", "")
-	deployClusterResources          = flag.String("deploy-cluster-resources", "", "")
-	operatorImage                   = flag.String("operator-image", "", "")
-	verbosity                       = flag.String("verbosity", "1", "")
-	pullPolicy                      = flag.String("pull-policy", "", "")
-	crName                          = flag.String("cr-name", "", "")
-	namespace                       = flag.String("namespace", "", "")
-	maxAverageSwapInPagesPerSecond  = flag.String("max-average-swapin-pages-per-second", "", "")
-	maxAverageSwapOutPagesPerSecond = flag.String("max-average-swapout-pages-per-second", "", "")
-	averageWindowSizeSeconds        = flag.String("average-window-size-seconds", "", "")
-	swapUtilizationThresholdFactor  = flag.String("swap-utilization-threshold-factor", "", "")
+	dockerRepo             = flag.String("docker-repo", "", "")
+	dockertag              = flag.String("docker-tag", "", "")
+	operatorVersion        = flag.String("operator-version", "", "")
+	genManifestsPath       = flag.String("generated-manifests-path", "", "")
+	deployClusterResources = flag.String("deploy-cluster-resources", "", "")
+	operatorImage          = flag.String("operator-image", "", "")
+	verbosity              = flag.String("verbosity", "1", "")
+	pullPolicy             = flag.String("pull-policy", "", "")
+	crName                 = flag.String("cr-name", "", "")
+	namespace              = flag.String("namespace", "", "")
+	targetNamespace        = flag.String("target-namespace", "", "")
+	restartRequired        = flag.String("restart-required", "", "")
+	labelSelector          = flag.String("label-selector", "", "")
+	machineTypeGlob        = flag.String("machine-type-global", "", "")
 )
 
 func main() {
@@ -161,15 +161,15 @@ func generateFromCode(resourceType, resourceGroup string) {
 func getOperatorResources(resourceGroup string) ([]client.Object, error) {
 	args := &operator.FactoryArgs{
 		NamespacedArgs: args2.FactoryArgs{
-			Verbosity:                       *verbosity,
-			OperatorVersion:                 *operatorVersion,
-			DeployClusterResources:          *deployClusterResources,
-			PullPolicy:                      *pullPolicy,
-			Namespace:                       *namespace,
-			MaxAverageSwapInPagesPerSecond:  *maxAverageSwapInPagesPerSecond,
-			MaxAverageSwapOutPagesPerSecond: *maxAverageSwapOutPagesPerSecond,
-			AverageWindowSizeSeconds:        *averageWindowSizeSeconds,
-			SwapUtilizationThresholdFactor:  *swapUtilizationThresholdFactor,
+			Verbosity:              *verbosity,
+			OperatorVersion:        *operatorVersion,
+			DeployClusterResources: *deployClusterResources,
+			PullPolicy:             *pullPolicy,
+			Namespace:              *namespace,
+			TargetNamespace:        *targetNamespace,
+			RestartRequired:        *restartRequired,
+			LabelSelector:          *labelSelector,
+			MachineTypeGlob:        *machineTypeGlob,
 		},
 		Image: *operatorImage,
 	}

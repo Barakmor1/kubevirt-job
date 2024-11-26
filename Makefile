@@ -26,14 +26,12 @@ all: build
 
 build:  kubevirt_job manifest-generator
 
-ifeq ($(origin KUBEVIRT_RELEASE), undefined)
-	KUBEVIRT_RELEASE="latest_nightly"
-endif
+KUBEVIRT_RELEASE ?= latest_nightly
 
 all: manifests build-images
 
 manifests:
-	hack/build/bazel-docker.sh "DOCKER_PREFIX=${DOCKER_PREFIX} DOCKER_TAG=${DOCKER_TAG} VERBOSITY=${VERBOSITY} PULL_POLICY=${PULL_POLICY} CR_NAME=${CR_NAME} KUBEVIRT_JOB_NAMESPACE=${KUBEVIRT_JOB_NAMESPACE} MAX_AVERAGE_SWAPIN_PAGES_PER_SECOND=${MAX_AVERAGE_SWAPIN_PAGES_PER_SECOND} MAX_AVERAGE_SWAPOUT_PAGES_PER_SECOND=${MAX_AVERAGE_SWAPOUT_PAGES_PER_SECOND} SWAP_UTILIZATION_THRESHOLD_FACTOR=${SWAP_UTILIZATION_THRESHOLD_FACTOR} AVERAGE_WINDOW_SIZE_SECONDS=${AVERAGE_WINDOW_SIZE_SECONDS}  DEPLOY_PROMETHEUS_RULE=${DEPLOY_PROMETHEUS_RULE} ./hack/build/build-manifests.sh"
+	hack/build/bazel-docker.sh "DOCKER_PREFIX=${DOCKER_PREFIX} DOCKER_TAG=${DOCKER_TAG} VERBOSITY=${VERBOSITY} PULL_POLICY=${PULL_POLICY} CR_NAME=${CR_NAME} KUBEVIRT_JOB_NAMESPACE=${KUBEVIRT_JOB_NAMESPACE} TARGET_NAMESPACE=${TARGET_NAMESPACE} RESTART_REQUIRED=${RESTART_REQUIRED} MACHINE_TYPE_GLOBAL=${MACHINE_TYPE_GLOBAL} LABEL_SELECTOR=${LABEL_SELECTOR} ./hack/build/build-manifests.sh"
 
 builder-push:
 	./hack/build/build-builder.sh
@@ -42,7 +40,7 @@ generate:
 	hack/build/bazel-docker.sh "./hack/update-codegen.sh"
 
 cluster-up:
-	eval "KUBEVIRT_RELEASE=${KUBEVIRT_RELEASE} KUBEVIRT_SWAP_ON=true ./cluster-up/up.sh"
+	eval "KUBEVIRT_RELEASE=${KUBEVIRT_RELEASE} ./cluster-up/up.sh"
 
 cluster-down:
 	./cluster-up/down.sh
@@ -59,7 +57,7 @@ cluster-clean-kubevirt-job:
 	./cluster-sync/clean.sh
 
 cluster-sync: cluster-clean-kubevirt-job
-	./cluster-sync/sync.sh kubevirt_job_AVAILABLE_TIMEOUT=${kubevirt_job_AVAILABLE_TIMEOUT} DOCKER_PREFIX=${DOCKER_PREFIX} DOCKER_TAG=${DOCKER_TAG} PULL_POLICY=${PULL_POLICY} kubevirt_job_NAMESPACE=${kubevirt_job_NAMESPACE}
+	./cluster-sync/sync.sh KUBEVIRT_JOB_AVAILABLE_TIMEOUT=${KUBEVIRT_JOB_AVAILABLE_TIMEOUT} DOCKER_PREFIX=${DOCKER_PREFIX} DOCKER_TAG=${DOCKER_TAG} PULL_POLICY=${PULL_POLICY} kubevirt_job_NAMESPACE=${kubevirt_job_NAMESPACE}
 
 test: WHAT = ./pkg/... ./cmd/...
 test: bootstrap-ginkgo

@@ -57,16 +57,6 @@ func randName() string {
 	return "testvmi" + "-" + rand.String(randomPostfixLen)
 }
 
-// WithLabel sets a label with specified value
-func WithLabel(key, value string) Option {
-	return func(vmi *v1.VirtualMachineInstance) {
-		if vmi.Labels == nil {
-			vmi.Labels = map[string]string{}
-		}
-		vmi.Labels[key] = value
-	}
-}
-
 // WithAnnotation adds an annotation with specified value
 func WithAnnotation(key, value string) Option {
 	return func(vmi *v1.VirtualMachineInstance) {
@@ -293,4 +283,14 @@ func baseVmi(name string) *v1.VirtualMachineInstance {
 	}
 
 	return vmi
+}
+
+func WithMachineType(machineType string) Option {
+	return func(vmi *v1.VirtualMachineInstance) {
+		if vmi.Spec.Domain.Machine == nil {
+			vmi.Spec.Domain.Machine = &v1.Machine{}
+		}
+
+		vmi.Spec.Domain.Machine.Type = machineType
+	}
 }

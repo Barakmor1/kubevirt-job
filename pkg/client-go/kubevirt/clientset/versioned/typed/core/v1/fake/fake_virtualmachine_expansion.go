@@ -32,3 +32,17 @@ func (c *FakeVirtualMachines) Restart(ctx context.Context, name string, restartO
 
 	return err
 }
+
+func (c *FakeVirtualMachines) Start(ctx context.Context, name string, startOptions *v1.StartOptions) error {
+	_, err := c.Fake.
+		Invokes(testing.NewPutSubresourceAction(virtualmachinesResource, c.ns, "start", name, startOptions), nil)
+
+	return err
+}
+
+func (c *FakeVirtualMachines) Stop(ctx context.Context, name string, stopOptions *v1.StopOptions) error {
+	_, err := c.Fake.
+		Invokes(testing.NewPutSubresourceAction(virtualmachinesResource, c.ns, "stop", name, stopOptions), nil)
+
+	return err
+}

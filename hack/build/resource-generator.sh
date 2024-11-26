@@ -44,11 +44,10 @@ function generateResourceManifest() {
             -verbosity="${VERBOSITY}" \
             -pull-policy="${PULL_POLICY}" \
             -namespace="${KUBEVIRT_JOB_NAMESPACE}" \
-            -max-average-swapin-pages-per-second="${MAX_AVERAGE_SWAPIN_PAGES_PER_SECOND}" \
-            -max-average-swapout-pages-per-second="${MAX_AVERAGE_SWAPOUT_PAGES_PER_SECOND}" \
-            -average-window-size-seconds="${AVERAGE_WINDOW_SIZE_SECONDS}" \
-            -swap-utilization-threshold-factor="${SWAP_UTILIZATION_THRESHOLD_FACTOR}" \
-            -deploy-prometheus-rule="${DEPLOY_PROMETHEUS_RULE}"
+            -target-namespace="${TARGET_NAMESPACE}" \
+            -restart-required="${RESTART_REQUIRED}" \
+            -label-selector="${LABEL_SELECTOR}" \
+            -machine-type-global="${MACHINE_TYPE_GLOBAL}" \
     ) 1>>"${targetDir}/"$manifestName
     (
         ${generator} -resource-type=${resourceType} \
@@ -61,11 +60,10 @@ function generateResourceManifest() {
             -verbosity="${VERBOSITY}" \
             -pull-policy="{{ pull_policy }}" \
             -namespace="{{ kubevirt_job_namespace }}" \
-            -max-average-swapin-pages-per-second="{{ max_average_swapin_pages_per_second }}" \
-            -max-average-swapout-pages-per-second="{{ max_average_swapout_pages_per_second }}" \
-            -average-window-size-seconds="{{ average_window_size_seconds }}" \
-            -swap-utilization-threshold-factor="{{ swap_utilization_threshold_factor }}" \
-            -deploy-prometheus-rule="${DEPLOY_PROMETHEUS_RULE}"
+            -target-namespace="{{ target_namespace }}" \
+            -restart-required="{{ restart_required }}" \
+            -label-selector="{{ label_selector }}" \
+            -machine-type-global="{{ machine_type_global }}" \
     ) 1>>"${targetDir}/"$manifestNamej2
 
     # Remove empty lines at the end of files which are added by go templating
@@ -123,12 +121,11 @@ function populateResourceManifest() {
             -verbosity="${VERBOSITY}" \
             -pull-policy="${PULL_POLICY}" \
             -cr-name="${CR_NAME}" \
-            -namespace="${kubevirt_job_namespace}" \
-            -max-average-swapin-pages-per-second="${MAX_AVERAGE_SWAPIN_PAGES_PER_SECOND}" \
-            -max-average-swapout-pages-per-second="${MAX_AVERAGE_SWAPOUT_PAGES_PER_SECOND}" \
-            -average-window-size-seconds="${AVERAGE_WINDOW_SIZE_SECONDS}" \
-            -swap-utilization-threshold-factor="${SWAP_UTILIZATION_THRESHOLD_FACTOR}" \
-            -deploy-prometheus-rule="${DEPLOY_PROMETHEUS_RULE}" \
+            -namespace="${KUBEVIRT_JOB_NAMESPACE}" \
+            -target-namespace="${TARGET_NAMESPACE}" \
+            -restart-required="${RESTART_REQUIRED}" \
+            -label-selector="${LABEL_SELECTOR}" \
+            -machine-type-global="${MACHINE_TYPE_GLOBAL}" \
             -generated-manifests-path=${generatedManifests}
     ) 1>>"${targetDir}/"$outfile
 
@@ -138,15 +135,14 @@ function populateResourceManifest() {
             -docker-tag="{{ docker_tag }}" \
             -operator-version="{{ operator_version }}" \
             -deploy-cluster-resources="true" \
-            -deploy-prometheus-rule="{{ DEPLOY_PROMETHEUS_RULE }}" \
             -operator-image="{{ operator_image_name }}" \
             -verbosity="${VERBOSITY}" \
             -pull-policy="{{ pull_policy }}" \
             -namespace="{{ kubevirt_job_namespace }}" \
-            -max-average-swapin-pages-per-second="{{ max_average_swapin_pages_per_second }}" \
-            -max-average-swapout-pages-per-second="{{ max_average_swapout_pages_per_second }}" \
-            -average-window-size-seconds="{{ average_window_size_seconds }}" \
-            -swap-utilization-threshold-factor="{{ swap_utilization_threshold_factor }}" \
+            -target-namespace="{{ target_namespace }}" \
+            -restart-required="{{ restart_required }}" \
+            -label-selector="{{ label_selector }}" \
+            -machine-type-global="{{ machine_type_global }}" \
             -generated-manifests-path=${generatedManifests}
     ) 1>>"${tmplTargetDir}/"$outfile".j2"
 

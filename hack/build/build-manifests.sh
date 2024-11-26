@@ -11,7 +11,6 @@
 #WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #See the License for the specific language governing permissions and
 #limitations under the License.
- git status
 
 script_dir="$(cd "$(dirname "$0")" && pwd -P)"
 
@@ -19,22 +18,17 @@ source "${script_dir}"/common.sh
 source "${script_dir}"/config.sh
 generator="${BIN_DIR}/manifest-generator"
 
- cd "${KUBEVIRT_JOB_DIR}/tools/manifest-generator/" && GO111MODULE=${GO111MODULE:-off} go build -o "${generator}" ./...
-pwd
-echo $generator
-ls $BIN_DIR
-exit 2
+( cd "${KUBEVIRT_JOB_DIR}/tools/manifest-generator/" && GO111MODULE=${GO111MODULE:-off} go build -o "${generator}" ./... )
 
 echo "DOCKER_PREFIX=${DOCKER_PREFIX}"
 echo "DOCKER_TAG=${DOCKER_TAG}"
 echo "VERBOSITY=${VERBOSITY}"
 echo "PULL_POLICY=${PULL_POLICY}"
 echo "KUBEVIRT_JOB_NAMESPACE=${KUBEVIRT_JOB_NAMESPACE}"
-echo "MAX_AVERAGE_SWAPIN_PAGES_PER_SECOND=${MAX_AVERAGE_SWAPIN_PAGES_PER_SECOND}"
-echo "MAX_AVERAGE_SWAPOUT_PAGES_PER_SECOND=${MAX_AVERAGE_SWAPOUT_PAGES_PER_SECOND}"
-echo "AVERAGE_WINDOW_SIZE_SECONDS=${AVERAGE_WINDOW_SIZE_SECONDS}"
-echo "SWAP_UTILIZATION_THRESHOLD_FACTOR=${SWAP_UTILIZATION_THRESHOLD_FACTOR}"
-echo "DEPLOY_PROMETHEUS_RULE=${DEPLOY_PROMETHEUS_RULE}"
+echo "TARGET_NAMESPACE=${TARGET_NAMESPACE}"
+echo "RESTART_REQUIRED=${RESTART_REQUIRED}"
+echo "LABEL_SELECTOR=${LABEL_SELECTOR}"
+echo "MACHINE_TYPE_GLOBAL=${MACHINE_TYPE_GLOBAL}"
 
 source "${script_dir}"/resource-generator.sh
 

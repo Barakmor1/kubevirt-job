@@ -54,8 +54,7 @@ var _ = Describe("MachineTypeUpdater", func() {
 		ctrl = gomock.NewController(GinkgoT())
 		virtClient = fake2.NewSimpleClientset()
 		kubevirtJobClient = client.NewMockKubevirtJobClient(ctrl)
-		kubevirtJobClient.KubevirtClient()
-		kubevirtJobClient.EXPECT().KubevirtClient().Return(virtClient)
+		kubevirtJobClient.EXPECT().KubevirtClient().Return(virtClient).AnyTimes()
 		EnvVarManager = &util.EnvVarManagerImpl{}
 	})
 
@@ -99,7 +98,7 @@ var _ = Describe("MachineTypeUpdater", func() {
 			DescribeTable("", func(machineType string, expectUpdate bool) {
 				vmi := libvmi.New(
 					libvmi.WithNamespace(v1.NamespaceDefault),
-					withMachineType(machineType),
+					libvmi.WithMachineType(machineType),
 				)
 				vm := libvmi.NewVirtualMachine(
 					vmi,
@@ -107,35 +106,21 @@ var _ = Describe("MachineTypeUpdater", func() {
 				_, err := virtClient.KubevirtV1().VirtualMachines(vm.Namespace).Create(context.Background(), vm, v1.CreateOptions{})
 				Expect(err).ToNot(HaveOccurred())
 				machineTypeUpdater.Run()
-				Expect(virtClient.Actions()[0].GetVerb()).To(Equal("list"))
-				Expect(virtClient.Actions()[0].GetResource().Resource).To(Equal("virtualmachines"))
+				Expect(virtClient.Actions()[1].GetVerb()).To(Equal("list"))
+				Expect(virtClient.Actions()[1].GetResource().Resource).To(Equal("virtualmachines"))
 
 				if expectUpdate {
-					Expect(virtClient.Actions()).To(HaveLen(2))
-					Expect(virtClient.Actions()[1].GetVerb()).To(Equal("patch"))
-					Expect(virtClient.Actions()[1].GetResource().Resource).To(Equal("virtualmachines"))
+					Expect(virtClient.Actions()).To(HaveLen(3))
+					Expect(virtClient.Actions()[2].GetVerb()).To(Equal("patch"))
+					Expect(virtClient.Actions()[2].GetResource().Resource).To(Equal("virtualmachines"))
 				} else {
-					Expect(virtClient.Actions()).To(HaveLen(1))
+					Expect(virtClient.Actions()).To(HaveLen(2))
 				}
 			},
 				Entry("should remove machineType if the vm machine type match", machineTypeNeedsUpdate, true),
 				Entry("should not update machineType if the vm machine type does not match", machineTypeNoUpdate, false),
 			)
 		})
-	})
-
-	When("there is no NAMESPACE environment variable set", func() {
-		BeforeEach(func() {
-			err := EnvVarManager.Setenv(machineTypeEnvName, machineTypeGlob)
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		It("should return an error", func() {
-			_, err := NewMachineTypeUpdater(kubevirtJobClient)
-			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(fmt.Errorf("no namespace was specified")))
-		})
-
 	})
 
 	When("NAMESPACE environment variable is set", func() {
@@ -168,7 +153,7 @@ var _ = Describe("MachineTypeUpdater", func() {
 			It("should only return vm in that namespace", func() {
 				vmi := libvmi.New(
 					libvmi.WithNamespace(namespaceName),
-					withMachineType(machineTypeNoUpdate),
+					libvmi.WithMachineType(machineTypeNoUpdate),
 				)
 				vm := libvmi.NewVirtualMachine(
 					vmi,
@@ -177,10 +162,10 @@ var _ = Describe("MachineTypeUpdater", func() {
 				Expect(err).ToNot(HaveOccurred())
 				machineTypeUpdater.Run()
 
-				Expect(virtClient.Actions()).To(HaveLen(1))
-				Expect(virtClient.Actions()[0].GetVerb()).To(Equal("list"))
-				Expect(virtClient.Actions()[0].GetResource().Resource).To(Equal("virtualmachines"))
-				Expect(virtClient.Actions()[0].GetNamespace()).To(Equal(namespaceName))
+				Expect(virtClient.Actions()).To(HaveLen(2))
+				Expect(virtClient.Actions()[1].GetVerb()).To(Equal("list"))
+				Expect(virtClient.Actions()[1].GetResource().Resource).To(Equal("virtualmachines"))
+				Expect(virtClient.Actions()[1].GetNamespace()).To(Equal(namespaceName))
 
 			})
 		})
@@ -233,18 +218,17 @@ var _ = Describe("MachineTypeUpdater", func() {
 				Expect(machineTypeUpdater.restartRequired).To(BeTrue())
 			})
 
-			DescribeTable("", func(running bool) {
+			DescribeTable("", func(rs virtv1.VirtualMachineRunStrategy) {
 				vmi := libvmi.New(
 					libvmi.WithNamespace(v1.NamespaceDefault),
-					withMachineType(machineTypeNeedsUpdate),
+					libvmi.WithMachineType(machineTypeNeedsUpdate),
 				)
 				var opts []libvmi.VMOption
-				if running {
-					opts = []libvmi.VMOption{
-						libvmi.WithRunStrategy(virtv1.RunStrategyAlways),
-						withPrintableStatus(virtv1.VirtualMachineStatusRunning),
-					}
+				opts = []libvmi.VMOption{
+					libvmi.WithRunStrategy(rs),
+					libvmi.WithPrintableStatus(virtv1.VirtualMachineStatusRunning),
 				}
+
 				vm := libvmi.NewVirtualMachine(
 					vmi,
 					opts...,
@@ -253,18 +237,32 @@ var _ = Describe("MachineTypeUpdater", func() {
 				Expect(err).ToNot(HaveOccurred())
 				machineTypeUpdater.Run()
 
-				Expect(virtClient.Actions()[0].GetVerb()).To(Equal("list"))
-				Expect(virtClient.Actions()[0].GetResource().Resource).To(Equal("virtualmachines"))
-				if running {
-					Expect(virtClient.Actions()).To(HaveLen(2))
-					Expect(virtClient.Actions()[1].GetVerb()).To(Equal("patch"))
-					Expect(virtClient.Actions()[1].GetResource().Resource).To(Equal("virtualmachines"))
-				} else {
-					Expect(virtClient.Actions()).To(HaveLen(1))
+				Expect(virtClient.Actions()[1].GetVerb()).To(Equal("list"))
+				Expect(virtClient.Actions()[1].GetResource().Resource).To(Equal("virtualmachines"))
+				switch rs {
+				case virtv1.RunStrategyAlways:
+					Expect(virtClient.Actions()).To(HaveLen(4))
+					Expect(virtClient.Actions()[2].GetVerb()).To(Equal("patch"))
+					Expect(virtClient.Actions()[2].GetResource().Resource).To(Equal("virtualmachines"))
+					Expect(virtClient.Actions()[3].GetVerb()).To(Equal("put"))
+					Expect(virtClient.Actions()[3].GetResource().Resource).To(Equal("virtualmachines"))
+					Expect(virtClient.Actions()[3].GetSubresource()).To(Equal("restart"))
+				case virtv1.RunStrategyOnce:
+					Expect(virtClient.Actions()).To(HaveLen(4))
+					Expect(virtClient.Actions()[2].GetVerb()).To(Equal("patch"))
+					Expect(virtClient.Actions()[2].GetResource().Resource).To(Equal("virtualmachines"))
+					Expect(virtClient.Actions()[3].GetVerb()).To(Equal("put"))
+					Expect(virtClient.Actions()[3].GetResource().Resource).To(Equal("virtualmachines"))
+					Expect(virtClient.Actions()[3].GetSubresource()).To(Equal("stop"))
+				case virtv1.RunStrategyHalted:
+					Expect(virtClient.Actions()).To(HaveLen(3))
+					Expect(virtClient.Actions()[2].GetVerb()).To(Equal("patch"))
+					Expect(virtClient.Actions()[2].GetResource().Resource).To(Equal("virtualmachines"))
 				}
 			},
-				Entry("should restart running vm after the patch", true),
-				Entry("should not restart non-running vm after the patch", false),
+				Entry("should restart running vm after the patch", virtv1.RunStrategyAlways),
+				Entry("should not restart non-running vm after the patch", virtv1.RunStrategyHalted),
+				Entry("should stop running vm with once RunStrategy after the patch", virtv1.RunStrategyOnce),
 			)
 		})
 	})
@@ -274,14 +272,14 @@ var _ = Describe("MachineTypeUpdater", func() {
 
 		BeforeEach(func() {
 			err := EnvVarManager.Setenv(machineTypeEnvName, machineTypeGlob)
-			Expect(err).To(HaveOccurred())
+			Expect(err).ToNot(HaveOccurred())
 			err = EnvVarManager.Setenv(namespaceEnvName, v1.NamespaceDefault)
-			Expect(err).To(HaveOccurred())
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should return an error in case of parsing error", func() {
 			err := EnvVarManager.Setenv(labelSelectorEnvName, badLabelSelector)
-			Expect(err).To(HaveOccurred())
+			Expect(err).ToNot(HaveOccurred())
 			_, err = NewMachineTypeUpdater(kubevirtJobClient)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("error parsing %s environment variable, value \"%s\"", labelSelectorEnvName, badLabelSelector)))
@@ -306,22 +304,22 @@ var _ = Describe("MachineTypeUpdater", func() {
 			It("should only return vm that matches label selector", func() {
 				vmi := libvmi.New(
 					libvmi.WithNamespace(v1.NamespaceDefault),
-					withMachineType(machineTypeNoUpdate),
+					libvmi.WithMachineType(machineTypeNoUpdate),
 				)
 				vm := libvmi.NewVirtualMachine(
 					vmi,
-					withLabel("valid_label", "value1"),
+					libvmi.WithLabel("valid_label", "value1"),
 				)
 				_, err := virtClient.KubevirtV1().VirtualMachines(vm.Namespace).Create(context.Background(), vm, v1.CreateOptions{})
 				Expect(err).ToNot(HaveOccurred())
 				machineTypeUpdater.Run()
 
-				Expect(virtClient.Actions()).To(HaveLen(1))
-				Expect(virtClient.Actions()[0].GetVerb()).To(Equal("list"))
-				Expect(virtClient.Actions()[0].GetResource().Resource).To(Equal("virtualmachines"))
+				Expect(virtClient.Actions()).To(HaveLen(2))
+				Expect(virtClient.Actions()[1].GetVerb()).To(Equal("list"))
+				Expect(virtClient.Actions()[1].GetResource().Resource).To(Equal("virtualmachines"))
 
 				// Retrieve the label selector from the list action
-				listAction, ok := virtClient.Actions()[0].(testing.ListAction)
+				listAction, ok := virtClient.Actions()[1].(testing.ListAction)
 				Expect(ok).To(BeTrue(), "Expected the action to be of type ListAction")
 
 				// Extract the label selector from the action
@@ -342,28 +340,3 @@ var _ = Describe("MachineTypeUpdater", func() {
 	})
 
 })
-
-func withMachineType(machineType string) libvmi.Option {
-	return func(vmi *virtv1.VirtualMachineInstance) {
-		if vmi.Spec.Domain.Machine == nil {
-			vmi.Spec.Domain.Machine = &virtv1.Machine{}
-		}
-
-		vmi.Spec.Domain.Machine.Type = machineType
-	}
-}
-
-func withPrintableStatus(status virtv1.VirtualMachinePrintableStatus) libvmi.VMOption {
-	return func(vm *virtv1.VirtualMachine) {
-		vm.Status.PrintableStatus = status
-	}
-}
-
-func withLabel(key, value string) libvmi.VMOption {
-	return func(vm *virtv1.VirtualMachine) {
-		if vm.Labels == nil {
-			vm.Labels = map[string]string{}
-		}
-		vm.Labels[key] = value
-	}
-}

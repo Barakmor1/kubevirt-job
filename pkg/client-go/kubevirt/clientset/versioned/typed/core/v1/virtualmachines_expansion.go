@@ -44,6 +44,8 @@ type VirtualMachineInstanceReplicaSetExpansion interface{}
 
 type VirtualMachineExpansion interface {
 	Restart(ctx context.Context, name string, restartOptions *v1.RestartOptions) error
+	Start(ctx context.Context, name string, startOptions *v1.StartOptions) error
+	Stop(ctx context.Context, name string, stopOptions *v1.StopOptions) error
 }
 
 func (c *virtualMachines) Restart(ctx context.Context, name string, restartOptions *v1.RestartOptions) error {
@@ -58,6 +60,38 @@ func (c *virtualMachines) Restart(ctx context.Context, name string, restartOptio
 		Name(name).
 		SubResource("restart").
 		Body(body).
+		Do(ctx).
+		Error()
+}
+
+func (c *virtualMachines) Start(ctx context.Context, name string, startOptions *v1.StartOptions) error {
+	optsJson, err := json.Marshal(startOptions)
+	if err != nil {
+		return err
+	}
+	return c.client.Put().
+		AbsPath(fmt.Sprintf(vmSubresourceURLFmt, v1.ApiStorageVersion)).
+		Namespace(c.ns).
+		Resource("virtualmachines").
+		Name(name).
+		SubResource("start").
+		Body(optsJson).
+		Do(ctx).
+		Error()
+}
+
+func (c *virtualMachines) Stop(ctx context.Context, name string, stopOptions *v1.StopOptions) error {
+	optsJson, err := json.Marshal(stopOptions)
+	if err != nil {
+		return err
+	}
+	return c.client.Put().
+		AbsPath(fmt.Sprintf(vmSubresourceURLFmt, v1.ApiStorageVersion)).
+		Namespace(c.ns).
+		Resource("virtualmachines").
+		Name(name).
+		SubResource("stop").
+		Body(optsJson).
 		Do(ctx).
 		Error()
 }

@@ -1,12 +1,8 @@
 # Builder stage
-FROM fedora:38 as builder
+FROM docker.io/library/golang:1.22-alpine as builder
 
-# Install necessary tools for building
-RUN dnf update -y && dnf install -y \
-    golang \
-    make \
-    git \
-    && dnf clean all
+# Install make
+RUN apk update && apk add make
 
 # Copy the source code from the host to the container
 COPY pkg /workdir/app/pkg
@@ -19,10 +15,10 @@ COPY Makefile /workdir/app/Makefile
 
 WORKDIR /workdir/app
 
-RUN make kubevirt
+RUN make kubevirt-job
 
 # Final stage
-FROM fedora:38
+FROM docker.io/library/golang:1.22-alpine
 
 # Copy the binary from the builder stage to the final image
 COPY --from=builder /workdir/app/kubevirt_job /app/kubevirt_job
@@ -31,7 +27,7 @@ COPY --from=builder /workdir/app/kubevirt_job /app/kubevirt_job
 WORKDIR /app
 
 # Add a non-root user for running the application
-RUN useradd -u 1001 -r -s /sbin/nologin -d /app/kubevirt_job kubevirt_job
+RUN adduser -u 1001 -D -s /bin/sh -h /app/kubevirt_job kubevirt_job
 USER 1001
 
 # Set the entrypoint to the binary

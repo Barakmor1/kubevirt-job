@@ -32,9 +32,9 @@ KUBECONFIG=${KUBECONFIG:-$BASE_PATH/$KUBEVIRT_PROVIDER/.kubeconfig}
 GOCLI=${GOCLI:-${KUBEVIRT_JOB_DIR}/cluster-up/cli.sh}
 KUBE_URL=${KUBE_URL:-""}
 KUBEVIRT_JOB_NAMESPACE=${KUBEVIRT_JOB_NAMESPACE:-kubevirt-job}
+KUBEVIRT_JOB_IMAGE=${KUBEVIRT_JOB_IMAGE:-registry:5000/kubevirt-job:latest}
 
-
-OPERATOR_CONTAINER_IMAGE=$(./cluster-up/kubectl.sh get ds -n $KUBEVIRT_JOB_NAMESPACE kubevirt-job-agent -o'custom-columns=spec:spec.template.spec.containers[0].image' --no-headers)
+OPERATOR_CONTAINER_IMAGE=$(./cluster-up/kubectl.sh get job -n $KUBEVIRT_JOB_NAMESPACE kubevirt-job -o'custom-columns=spec:spec.template.spec.containers[0].image' --no-headers)
 DOCKER_PREFIX=${OPERATOR_CONTAINER_IMAGE%/*}
 DOCKER_TAG=${OPERATOR_CONTAINER_IMAGE##*:}
 
@@ -52,6 +52,7 @@ parseTestOpts "${@}"
 
 arg_kubeurl="${KUBE_URL:+-kubeurl=$KUBE_URL}"
 arg_namespace="${KUBEVIRT_JOB_NAMESPACE:+-kubevirt-job-namespace=$KUBEVIRT_JOB_NAMESPACE}"
+arg_kubevirt_job_image="${KUBEVIRT_JOB_IMAGE:+-kubevirt-job-image=$KUBEVIRT_JOB_IMAGE}"
 arg_kubeconfig_kubevirt_job="${KUBECONFIG:+-kubeconfig-kubevirt-job=$KUBECONFIG}"
 arg_kubeconfig="${KUBECONFIG:+-kubeconfig=$KUBECONFIG}"
 arg_kubectl="${KUBECTL:+-kubectl-path-kubevirt-job=$KUBECTL}"
@@ -60,11 +61,10 @@ arg_gocli="${GOCLI:+-gocli-path-kubevirt-job=$GOCLI}"
 arg_docker_prefix="${DOCKER_PREFIX:+-docker-prefix=$DOCKER_PREFIX}"
 arg_docker_tag="${DOCKER_TAG:+-docker-tag=$DOCKER_TAG}"
 
-test_args="${test_args}  -ginkgo.v  ${arg_kubeurl} ${arg_namespace} ${arg_kubeconfig} ${arg_kubeconfig_kubevirt_job} ${arg_kubectl} ${arg_oc} ${arg_gocli} ${arg_docker_prefix} ${arg_docker_tag}"
+test_args="${test_args}  -ginkgo.v  ${arg_kubeurl} ${arg_namespace} ${arg_kubevirt_job_image} ${arg_kubeconfig} ${arg_kubeconfig_kubevirt_job} ${arg_kubectl} ${arg_oc} ${arg_gocli} ${arg_docker_prefix} ${arg_docker_tag}"
 
-test_command="${TESTS_OUT_DIR}/tests.test -test.timeout 360m ${test_args}"
-echo "$test_command"
 (
-    cd ${KUBEVIRT_JOB_DIR}/tests
-    ${test_command}
+    export TESTS_WORKDIR=${AAQ_DIR}/tests
+    ginkgo_args="--trace --timeout=8h --v"
+    ${TESTS_OUT_DIR}/ginkgo ${ginkgo_args} ${TESTS_OUT_DIR}/tests.test -- ${test_args}
 )
