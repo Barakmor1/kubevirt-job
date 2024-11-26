@@ -1,5 +1,5 @@
 .idea/
-kubevir_job
+kubevirt_job
 tmp
 _ci-configs/*
 0
